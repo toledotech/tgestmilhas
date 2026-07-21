@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alerta de Milhas — Entre no grupo grátis</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --card: #121b2e;
+    --accent: #7fe08a;
+    --text: #f2f5f9;
+    --muted: #9aa7bd;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #0b1220 0%, #101c33 100%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    max-width: 440px;
+    width: 100%;
+    padding: 32px 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 8px;
+  }
+  p.subtitle {
+    color: var(--muted);
+    margin: 0 0 24px;
+    line-height: 1.5;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    margin: 16px 0 6px;
+    color: var(--muted);
+  }
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #263654;
+    background: #0d1626;
+    color: var(--text);
+    font-size: 1rem;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  button {
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: #05130a;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .error {
+    color: #ff8a8a;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    min-height: 1.2em;
+  }
+  .success {
+    text-align: center;
+  }
+  .success a {
+    display: inline-block;
+    margin-top: 16px;
+    background: var(--accent);
+    color: #05130a;
+    padding: 14px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <h1>Entre no grupo gratuito!</h1>
+    <p class="subtitle">Receba todos os dias promoções de passagens aéreas com milhas direto no seu WhatsApp/Telegram.</p>
+
+    <form id="lead-form">
+      <label for="email">Qual seu melhor email?</label>
+      <input type="email" id="email" name="email" required placeholder="voce@email.com" />
+
+      <label for="profile">Qual desses perfis de viajante mais combina com você?</label>
+      <select id="profile" name="profile" required>
+        <option value="" disabled selected>Selecione uma opção</option>
+        <option value="quase_nunca">Quase nunca viajo</option>
+        <option value="nacional_1_2">Faço viagens nacionais 1 ou 2 vezes ao ano</option>
+        <option value="internacional_1_2">Faço no mínimo 1 ou 2 viagens internacionais por ano</option>
+        <option value="frequente_4mais">Faço mais de 4 viagens ao ano (Nacionais e Internacionais)</option>
+      </select>
+
+      <button type="submit" id="submit-btn">Entrar no grupo gratuito agora!</button>
+      <div class="error" id="error"></div>
+    </form>
+
+    <div class="success" id="success" style="display:none">
+      <p>Prontinho! Clique abaixo para entrar no grupo:</p>
+      <a id="group-link" href="#" target="_blank" rel="noopener">Entrar no grupo agora</a>
+    </div>
+  </div>
+
+<script>
+  const form = document.getElementById('lead-form');
+  const errorEl = document.getElementById('error');
+  const submitBtn = document.getElementById('submit-btn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.textContent = '';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+
+    const payload = {
+      email: document.getElementById('email').value.trim(),
+      profile: document.getElementById('profile').value,
+    };
+
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Não foi possível cadastrar seu email.');
+      }
+
+      document.getElementById('lead-form').style.display = 'none';
+      document.getElementById('group-link').href = data.groupUrl;
+      document.getElementById('success').style.display = 'block';
+    } catch (err) {
+      errorEl.textContent = err.message;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Entrar no grupo gratuito agora!';
+    }
+  });
+</script>
+</body>
+</html>

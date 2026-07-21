@@ -1,0 +1,20 @@
+services:
+  milhas-scraper:
+    build: .
+    container_name: milhas-scraper
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - SCRAPE_TIMEOUT_MS=45000
+      - PLAYWRIGHT_HEADLESS=true
+    networks:
+      - n8n_network
+
+networks:
+  n8n_network:
+    external: true
+    # Deve ser a mesma rede Docker onde o n8n já está rodando na VPS,
+    # para que o n8n consiga chamar http://milhas-scraper:3000 pelo nome
+    # do serviço. Ajuste o nome conforme `docker network ls` na sua VPS.
