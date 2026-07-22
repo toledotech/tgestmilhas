@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const { SmilesScraper } = require('./scrapers/smiles');
 const { LatamPassScraper } = require('./scrapers/latampass');
 const { TudoAzulScraper } = require('./scrapers/tudoazul');
-const { saveLead } = require('./leads');
+const { saveLead, ensureSchema } = require('./leads');
 
 const PORT = process.env.PORT || 3000;
 const HEADLESS = process.env.PLAYWRIGHT_HEADLESS !== 'false';
@@ -25,9 +25,9 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-app.post('/api/leads', (req, res) => {
+app.post('/api/leads', async (req, res) => {
   try {
-    saveLead(req.body || {});
+    await saveLead(req.body || {});
     res.json({ groupUrl: FREE_GROUP_URL });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -81,6 +81,13 @@ function withTimeout(promise, ms, label) {
   ]);
 }
 
-app.listen(PORT, () => {
-  console.log(`Scraper de milhas rodando em http://localhost:${PORT}`);
-});
+ensureSchema()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Scraper de milhas rodando em http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Falha ao preparar o banco de dados:', err.message);
+    process.exit(1);
+  });

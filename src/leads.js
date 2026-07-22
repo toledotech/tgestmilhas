@@ -1,7 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-
-const LEADS_FILE = process.env.LEADS_FILE || path.join(__dirname, '..', 'data', 'leads.jsonl');
+const { Pool } = require('pg');
 
 const VALID_PROFILES = new Set([
   'quase_nunca',
@@ -12,7 +9,20 @@ const VALID_PROFILES = new Set([
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function saveLead({ email, profile }) {
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+async function ensureSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      profile TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+}
+
+async function saveLead({ email, profile }) {
   if (!email || !EMAIL_REGEX.test(email)) {
     throw new Error('email inválido');
   }
@@ -20,12 +30,15 @@ function saveLead({ email, profile }) {
     throw new Error('perfil de viajante inválido');
   }
 
-  fs.mkdirSync(path.dirname(LEADS_FILE), { recursive: true });
+  const result = await pool.query(
+    `INSERT INTO leads (email, profile)
+     VALUES ($1, $2)
+     ON CONFLICT (email) DO UPDATE SET profile = EXCLUDED.profile
+     RETURNING email, profile, created_at`,
+    [email, profile]
+  );
 
-  const entry = { email, profile, createdAt: new Date().toISOString() };
-  fs.appendFileSync(LEADS_FILE, JSON.stringify(entry) + '\n');
-
-  return entry;
+  return result.rows[0];
 }
 
-module.exports = { saveLead, LEADS_FILE };
+module.exports = { saveLead, ensureSchema };
