@@ -94,7 +94,20 @@ sites reais, mas quebram sem aviso. Antes de confiar em produção:
   (`isTrusted`) nesse ponto específico — ao contrário da Smiles, onde era o
   oposto (mouse real atrapalhava). Precisa de mais uma rodada de teste ao
   vivo combinando as duas abordagens.
-- **TudoAzul**: ainda não testado ao vivo — é o próximo a validar.
+- **TudoAzul**: a que chegou mais longe das três. Validado ao vivo ponta a
+  ponta manualmente: popup de cookies, autocomplete de origem/destino (usa
+  `role="option"` limpo, mais fácil que Smiles/LATAM), calendário via
+  `data-date="AAAA-MM-DD"` nos botões de dia (também mais simples — sem
+  precisar de aria-label com nome de mês por extenso), e o clique em "Buscar
+  passagens" **navegou de verdade** para a página de resultados com
+  origin/destination/data corretos na URL — nenhuma das outras duas chegou
+  nesse ponto. A página de resultados carregada no teste manual não mostrou
+  nenhum card de voo, mas mesmo depois de codificar a mesma lógica em
+  `TudoAzulScraper`, o autocomplete de origem já falha antes de chegar lá
+  ("campo Origem não encontrado") — mesmo padrão dos outros dois: funciona
+  no teste manual ao vivo, mas falha ao rodar via classe/script. Ainda não
+  investigado a fundo (suspeita segue sendo timing/rate-limiting, não lógica
+  errada).
 
 Para depurar, rode com o navegador visível:
 

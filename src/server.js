@@ -81,13 +81,14 @@ function withTimeout(promise, ms, label) {
   ]);
 }
 
-ensureSchema()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Scraper de milhas rodando em http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Falha ao preparar o banco de dados:', err.message);
-    process.exit(1);
+if (process.env.DATABASE_URL) {
+  ensureSchema().catch((err) => {
+    console.error('Falha ao preparar o banco de dados (leads):', err.message);
   });
+} else {
+  console.warn('DATABASE_URL não definida — /api/leads não vai funcionar (ok para testar só o scraper localmente).');
+}
+
+app.listen(PORT, () => {
+  console.log(`Scraper de milhas rodando em http://localhost:${PORT}`);
+});
