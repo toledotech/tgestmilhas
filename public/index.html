@@ -11,6 +11,8 @@
     --card: #121b2e;
     --accent: #7fe08a;
     --accent-dark: #05130a;
+    --warm: #ff8a5c;
+    --warm2: #ffc85c;
     --text: #f2f5f9;
     --muted: #9aa7bd;
     --border: #263654;
@@ -32,9 +34,32 @@
 
   /* Hero */
   .hero {
-    background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 60%, #142544 100%);
+    position: relative;
+    background:
+      radial-gradient(ellipse 90% 60% at 15% 0%, rgba(255, 138, 92, 0.20), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 100% 20%, rgba(255, 200, 92, 0.12), transparent 60%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg2) 60%, #142544 100%);
     padding: 64px 0 80px;
+    overflow: hidden;
   }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.28;
+  }
+  .hero-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, var(--bg) 10%, rgba(11,18,32,0.75) 55%, rgba(11,18,32,0.92) 100%);
+  }
+  .hero-grid { position: relative; z-index: 1; }
   .hero-grid {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
@@ -49,9 +74,9 @@
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.04em;
-    color: var(--accent);
-    background: rgba(127, 224, 138, 0.1);
-    border: 1px solid rgba(127, 224, 138, 0.3);
+    color: var(--warm2);
+    background: rgba(255, 138, 92, 0.12);
+    border: 1px solid rgba(255, 138, 92, 0.35);
     border-radius: 999px;
     padding: 6px 14px;
     margin-bottom: 20px;
@@ -61,6 +86,12 @@
     line-height: 1.15;
     margin: 0 0 16px;
   }
+  h1 .highlight {
+    background: linear-gradient(100deg, var(--warm2), var(--warm));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   .hero p.lead {
     color: var(--muted);
     font-size: 1.05rem;
@@ -68,12 +99,22 @@
     max-width: 46ch;
   }
 
-  /* Illustration (no photos, SVG only) */
-  .illustration {
-    display: flex;
-    justify-content: center;
+  /* Photo slot (used in hero + about + cta), with gradient fallback if the
+     image file doesn't exist yet — always looks intentional either way. */
+  .photo-slot {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ff8a5c 0%, #ffc85c 50%, #7fe08a 100%);
+    aspect-ratio: 4 / 3;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
   }
-  .illustration svg { width: 100%; max-width: 380px; height: auto; }
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
 
   /* Form card */
   .card {
@@ -184,8 +225,8 @@
     width: 32px;
     height: 32px;
     border-radius: 999px;
-    background: rgba(127, 224, 138, 0.15);
-    color: var(--accent);
+    background: linear-gradient(135deg, var(--warm2), var(--warm));
+    color: var(--accent-dark);
     font-weight: 700;
     margin-bottom: 14px;
   }
@@ -207,7 +248,39 @@
   }
   .about h2 { font-size: 1.6rem; margin: 0 0 16px; }
   .about p { color: var(--muted); }
-  .about-illustration svg { width: 100%; max-width: 320px; }
+
+  /* Final CTA */
+  .cta-section {
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .cta-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.35;
+  }
+  .cta-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, var(--bg) 0%, rgba(11,18,32,0.6) 50%, var(--bg) 100%);
+  }
+  .cta-section .container { position: relative; z-index: 1; }
+  .cta-button {
+    display: inline-block;
+    background: linear-gradient(100deg, var(--warm2), var(--warm));
+    color: var(--accent-dark);
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-weight: 700;
+    text-decoration: none;
+  }
 
   /* Footer */
   footer {
@@ -222,10 +295,13 @@
 <body>
 
   <section class="hero">
+    <div class="hero-bg">
+      <img src="/images/hero.jpg" alt="" onerror="this.style.display='none'" />
+    </div>
     <div class="container hero-grid">
       <div>
-        <span class="eyebrow">100% GRATUITO</span>
-        <h1>Passagens aéreas até 90% mais baratas, direto no seu WhatsApp</h1>
+        <span class="eyebrow">✈️ 100% GRATUITO</span>
+        <h1>Sua próxima viagem pode custar <span class="highlight">90% menos</span> — e você vai saber na hora</h1>
         <p class="lead">Monitoramos Smiles, LATAM Pass e TudoAzul o dia inteiro e te avisamos assim que aparecer uma oferta boa de verdade — sem você precisar ficar caçando promoção.</p>
         <p class="lead">Cadastre seu email abaixo e entre no grupo gratuito agora mesmo.</p>
       </div>
@@ -292,35 +368,20 @@
         <p>Combinamos monitoramento automatizado com curadoria manual pra te entregar só as promoções que realmente valem a pena — sem enrolação, sem spam.</p>
         <p>Nosso objetivo é te ajudar a viajar mais pagando menos, usando milhas de um jeito inteligente.</p>
       </div>
-      <div class="about-illustration">
-        <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#7fe08a" stop-opacity="0.25"/>
-              <stop offset="100%" stop-color="#101c33" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-          <circle cx="200" cy="150" r="130" fill="url(#g1)"/>
-          <g stroke="#7fe08a" stroke-width="2" fill="none" opacity="0.5">
-            <circle cx="200" cy="150" r="90"/>
-            <circle cx="200" cy="150" r="60"/>
-          </g>
-          <path d="M120 170 Q200 100 280 170" stroke="#9aa7bd" stroke-width="2" fill="none" stroke-dasharray="6 6" opacity="0.6"/>
-          <g transform="translate(190,120) rotate(35)">
-            <path d="M0 20 L40 0 L34 10 L60 6 L34 14 L40 30 Z" fill="#7fe08a"/>
-          </g>
-          <circle cx="120" cy="170" r="5" fill="#f2f5f9"/>
-          <circle cx="280" cy="170" r="5" fill="#f2f5f9"/>
-        </svg>
+      <div class="photo-slot">
+        <img src="/images/about.jpg" alt="Viajante feliz em um aeroporto" onerror="this.remove()" />
       </div>
     </div>
   </section>
 
-  <section>
+  <section class="cta-section">
+    <div class="cta-bg">
+      <img src="/images/cta-bg.jpg" alt="" onerror="this.style.display='none'" />
+    </div>
     <div class="container" style="text-align:center;">
       <h2 class="section-title">Pronto pra economizar na sua próxima viagem?</h2>
       <p class="section-subtitle">É grátis, leva um minuto, e você pode sair quando quiser.</p>
-      <a href="#card" style="display:inline-block; background:var(--accent); color:var(--accent-dark); padding:14px 28px; border-radius:10px; font-weight:700; text-decoration:none;">Quero entrar no grupo gratuito</a>
+      <a href="#card" class="cta-button">Quero entrar no grupo gratuito ✈️</a>
     </div>
   </section>
 
