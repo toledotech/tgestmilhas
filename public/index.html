@@ -426,6 +426,10 @@
       document.getElementById('lead-form').style.display = 'none';
       document.getElementById('group-link').href = data.groupUrl;
       document.getElementById('success').style.display = 'block';
+
+      // Redireciona automaticamente (mesma aba, sem popup) — o botão continua
+      // visível como alternativa caso o redirecionamento não aconteça.
+      window.location.href = data.groupUrl;
     } catch (err) {
       errorEl.textContent = err.message;
       submitBtn.disabled = false;
