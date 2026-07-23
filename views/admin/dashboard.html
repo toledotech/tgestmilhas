@@ -152,8 +152,8 @@
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>Email</th><th>Perfil</th><th>Data</th></tr></thead>
-          <tbody id="leads-body"><tr><td colspan="3" class="empty">Carregando…</td></tr></tbody>
+          <thead><tr><th>Email</th><th>WhatsApp</th><th>Perfil</th><th>Data</th></tr></thead>
+          <tbody id="leads-body"><tr><td colspan="4" class="empty">Carregando…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -246,10 +246,11 @@
       ? leads.map((l) => `
         <tr>
           <td>${escapeHtml(l.email)}</td>
+          <td>${escapeHtml(l.phone) || '<span class="muted">—</span>'}</td>
           <td>${PROFILE_LABELS[l.profile] || l.profile}</td>
           <td class="muted">${new Date(l.created_at).toLocaleString('pt-BR')}</td>
         </tr>`).join('')
-      : '<tr><td colspan="3" class="empty">Nenhum lead ainda.</td></tr>';
+      : '<tr><td colspan="4" class="empty">Nenhum lead ainda.</td></tr>';
   }
 
   // --- Mensagens ---
