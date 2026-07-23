@@ -3,55 +3,106 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Alerta de Milhas — Entre no grupo grátis</title>
+<title>Alerta de Milhas — Passagens baratas direto no seu WhatsApp</title>
 <style>
   :root {
     --bg: #0b1220;
+    --bg2: #101c33;
     --card: #121b2e;
     --accent: #7fe08a;
+    --accent-dark: #05130a;
     --text: #f2f5f9;
     --muted: #9aa7bd;
+    --border: #263654;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: linear-gradient(180deg, #0b1220 0%, #101c33 100%);
+    background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    line-height: 1.5;
   }
+  a { color: inherit; }
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 60%, #142544 100%);
+    padding: 64px 0 80px;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; }
+  }
+  .eyebrow {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    background: rgba(127, 224, 138, 0.1);
+    border: 1px solid rgba(127, 224, 138, 0.3);
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    line-height: 1.15;
+    margin: 0 0 16px;
+  }
+  .hero p.lead {
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin: 0 0 8px;
+    max-width: 46ch;
+  }
+
+  /* Illustration (no photos, SVG only) */
+  .illustration {
+    display: flex;
+    justify-content: center;
+  }
+  .illustration svg { width: 100%; max-width: 380px; height: auto; }
+
+  /* Form card */
   .card {
     background: var(--card);
     border-radius: 16px;
-    max-width: 440px;
-    width: 100%;
-    padding: 32px 28px;
+    padding: 28px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.04);
   }
-  h1 {
-    font-size: 1.5rem;
-    margin: 0 0 8px;
+  .card h2 {
+    font-size: 1.2rem;
+    margin: 0 0 6px;
   }
-  p.subtitle {
+  .card p.subtitle {
     color: var(--muted);
-    margin: 0 0 24px;
-    line-height: 1.5;
+    margin: 0 0 20px;
+    font-size: 0.92rem;
   }
   label {
     display: block;
     font-size: 0.85rem;
-    margin: 16px 0 6px;
+    margin: 14px 0 6px;
     color: var(--muted);
   }
   input, select {
     width: 100%;
     padding: 12px 14px;
     border-radius: 10px;
-    border: 1px solid #263654;
+    border: 1px solid var(--border);
     background: #0d1626;
     color: var(--text);
     font-size: 1rem;
@@ -62,19 +113,22 @@
   }
   button {
     width: 100%;
-    margin-top: 24px;
+    margin-top: 20px;
     padding: 14px;
     border-radius: 10px;
     border: none;
     background: var(--accent);
-    color: #05130a;
+    color: var(--accent-dark);
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
   }
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .fine-print {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 12px;
   }
   .error {
     color: #ff8a8a;
@@ -82,48 +136,199 @@
     margin-top: 8px;
     min-height: 1.2em;
   }
-  .success {
-    text-align: center;
-  }
+  .success { text-align: center; }
   .success a {
     display: inline-block;
     margin-top: 16px;
     background: var(--accent);
-    color: #05130a;
+    color: var(--accent-dark);
     padding: 14px 20px;
     border-radius: 10px;
     text-decoration: none;
     font-weight: 700;
   }
+
+  /* Sections */
+  section { padding: 72px 0; }
+  .section-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    text-align: center;
+    margin: 0 0 12px;
+  }
+  .section-subtitle {
+    text-align: center;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 auto 48px;
+  }
+
+  /* How it works */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 760px) {
+    .steps { grid-template-columns: 1fr; }
+  }
+  .step {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .step .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: rgba(127, 224, 138, 0.15);
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .step h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .step p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+  /* Sobre */
+  .about {
+    background: var(--bg2);
+  }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    .about-grid { grid-template-columns: 1fr; }
+  }
+  .about h2 { font-size: 1.6rem; margin: 0 0 16px; }
+  .about p { color: var(--muted); }
+  .about-illustration svg { width: 100%; max-width: 320px; }
+
+  /* Footer */
+  footer {
+    padding: 32px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
 </style>
 </head>
 <body>
-  <div class="card" id="card">
-    <h1>Entre no grupo gratuito!</h1>
-    <p class="subtitle">Receba todos os dias promoções de passagens aéreas com milhas direto no seu WhatsApp/Telegram.</p>
 
-    <form id="lead-form">
-      <label for="email">Qual seu melhor email?</label>
-      <input type="email" id="email" name="email" required placeholder="voce@email.com" />
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">100% GRATUITO</span>
+        <h1>Passagens aéreas até 90% mais baratas, direto no seu WhatsApp</h1>
+        <p class="lead">Monitoramos Smiles, LATAM Pass e TudoAzul o dia inteiro e te avisamos assim que aparecer uma oferta boa de verdade — sem você precisar ficar caçando promoção.</p>
+        <p class="lead">Cadastre seu email abaixo e entre no grupo gratuito agora mesmo.</p>
+      </div>
 
-      <label for="profile">Qual desses perfis de viajante mais combina com você?</label>
-      <select id="profile" name="profile" required>
-        <option value="" disabled selected>Selecione uma opção</option>
-        <option value="quase_nunca">Quase nunca viajo</option>
-        <option value="nacional_1_2">Faço viagens nacionais 1 ou 2 vezes ao ano</option>
-        <option value="internacional_1_2">Faço no mínimo 1 ou 2 viagens internacionais por ano</option>
-        <option value="frequente_4mais">Faço mais de 4 viagens ao ano (Nacionais e Internacionais)</option>
-      </select>
+      <div class="card" id="card">
+        <h2>Entre no grupo gratuito!</h2>
+        <p class="subtitle">Receba as melhores promoções de passagens com milhas todos os dias.</p>
 
-      <button type="submit" id="submit-btn">Entrar no grupo gratuito agora!</button>
-      <div class="error" id="error"></div>
-    </form>
+        <form id="lead-form">
+          <label for="email">Qual seu melhor email?</label>
+          <input type="email" id="email" name="email" required placeholder="voce@email.com" />
 
-    <div class="success" id="success" style="display:none">
-      <p>Prontinho! Clique abaixo para entrar no grupo:</p>
-      <a id="group-link" href="#" target="_blank" rel="noopener">Entrar no grupo agora</a>
+          <label for="profile">Qual desses perfis de viajante mais combina com você?</label>
+          <select id="profile" name="profile" required>
+            <option value="" disabled selected>Selecione uma opção</option>
+            <option value="quase_nunca">Quase nunca viajo</option>
+            <option value="nacional_1_2">Faço viagens nacionais 1 ou 2 vezes ao ano</option>
+            <option value="internacional_1_2">Faço no mínimo 1 ou 2 viagens internacionais por ano</option>
+            <option value="frequente_4mais">Faço mais de 4 viagens ao ano (Nacionais e Internacionais)</option>
+          </select>
+
+          <button type="submit" id="submit-btn">Entrar no grupo gratuito agora!</button>
+          <div class="error" id="error"></div>
+          <p class="fine-print">Sem spam. Cancele quando quiser.</p>
+        </form>
+
+        <div class="success" id="success" style="display:none">
+          <p>Prontinho! Clique abaixo para entrar no grupo:</p>
+          <a id="group-link" href="#" target="_blank" rel="noopener">Entrar no grupo agora</a>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <h2 class="section-title">Como funciona</h2>
+      <p class="section-subtitle">Simples assim — em menos de um minuto você já está recebendo alertas.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <h3>Você entra no grupo</h3>
+          <p>Cadastre seu email e escolha seu perfil de viajante. Leva menos de um minuto.</p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <h3>A gente monitora por você</h3>
+          <p>Nosso robô fica de olho o dia inteiro nas passagens com milhas da Smiles, LATAM Pass e TudoAzul.</p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <h3>Você recebe o alerta</h3>
+          <p>Assim que aparecer uma promoção boa, você recebe o alerta com trecho, data e link direto pra emissão.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="about">
+    <div class="container about-grid">
+      <div>
+        <h2>Quem somos</h2>
+        <p>O Alerta de Milhas nasceu de um jeito simples: gente que ama viajar e cansou de pagar caro por passagem.</p>
+        <p>Combinamos monitoramento automatizado com curadoria manual pra te entregar só as promoções que realmente valem a pena — sem enrolação, sem spam.</p>
+        <p>Nosso objetivo é te ajudar a viajar mais pagando menos, usando milhas de um jeito inteligente.</p>
+      </div>
+      <div class="about-illustration">
+        <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#7fe08a" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#101c33" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <circle cx="200" cy="150" r="130" fill="url(#g1)"/>
+          <g stroke="#7fe08a" stroke-width="2" fill="none" opacity="0.5">
+            <circle cx="200" cy="150" r="90"/>
+            <circle cx="200" cy="150" r="60"/>
+          </g>
+          <path d="M120 170 Q200 100 280 170" stroke="#9aa7bd" stroke-width="2" fill="none" stroke-dasharray="6 6" opacity="0.6"/>
+          <g transform="translate(190,120) rotate(35)">
+            <path d="M0 20 L40 0 L34 10 L60 6 L34 14 L40 30 Z" fill="#7fe08a"/>
+          </g>
+          <circle cx="120" cy="170" r="5" fill="#f2f5f9"/>
+          <circle cx="280" cy="170" r="5" fill="#f2f5f9"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container" style="text-align:center;">
+      <h2 class="section-title">Pronto pra economizar na sua próxima viagem?</h2>
+      <p class="section-subtitle">É grátis, leva um minuto, e você pode sair quando quiser.</p>
+      <a href="#card" style="display:inline-block; background:var(--accent); color:var(--accent-dark); padding:14px 28px; border-radius:10px; font-weight:700; text-decoration:none;">Quero entrar no grupo gratuito</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      © 2026 Alerta de Milhas — Todos os direitos reservados.
+    </div>
+  </footer>
 
 <script>
   const form = document.getElementById('lead-form');
