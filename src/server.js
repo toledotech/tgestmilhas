@@ -12,7 +12,8 @@ const { LatamPassScraper } = require('./scrapers/latampass');
 const { TudoAzulScraper } = require('./scrapers/tudoazul');
 const { saveLead, getAllLeads, ensureSchema: ensureLeadsSchema } = require('./leads');
 const adminUsers = require('./adminUsers');
-const evolution = require('./evolution');
+const messages = require('./messages');
+const { startScheduler } = require('./scheduler');
 
 const PORT = process.env.PORT || 3000;
 const HEADLESS = process.env.PLAYWRIGHT_HEADLESS !== 'false';
@@ -100,33 +101,117 @@ app.get('/api/admin/leads', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/admin/broadcast', requireAuth, upload.single('image'), async (req, res) => {
+app.post('/api/admin/users', requireAuth, express.json(), async (req, res) => {
   try {
-    const text = (req.body.text || '').trim();
-    if (!text && !req.file) {
-      return res.status(400).json({ error: 'escreva um texto ou anexe uma imagem' });
+    const user = await adminUsers.createUser(req.body || {});
+    res.json({ user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// --- Admin: mensagens (rascunho / agendamento / envio / histórico) ---
+
+app.get('/api/admin/messages', requireAuth, async (req, res) => {
+  try {
+    const list = await messages.listMessages({ status: req.query.status });
+    const stats = await messages.getStats();
+    res.json({ messages: list, stats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/messages/export.csv', requireAuth, async (req, res) => {
+  try {
+    const list = await messages.listMessages();
+    const rows = [
+      ['id', 'status', 'texto', 'tem_imagem', 'agendada_para', 'enviada_em', 'erro', 'criada_em'],
+      ...list.map((m) => [
+        m.id,
+        m.status,
+        (m.text || '').replace(/\r?\n/g, ' ').replace(/"/g, '""'),
+        m.image_base64 ? 'sim' : 'não',
+        m.scheduled_for || '',
+        m.sent_at || '',
+        (m.error || '').replace(/"/g, '""'),
+        m.created_at,
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="mensagens.csv"');
+    res.send('﻿' + csv);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/messages/:id', requireAuth, async (req, res) => {
+  try {
+    const message = await messages.getMessage(req.params.id);
+    if (!message) return res.status(404).json({ error: 'mensagem não encontrada' });
+    res.json({ message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/messages', requireAuth, upload.single('image'), async (req, res) => {
+  try {
+    const image = req.file ? { base64: req.file.buffer.toString('base64'), mimetype: req.file.mimetype } : null;
+    const requestedStatus = req.body.status === 'send_now' ? 'draft' : req.body.status;
+
+    let message = await messages.createMessage({
+      text: req.body.text,
+      image,
+      status: requestedStatus,
+      scheduledFor: req.body.scheduledFor || null,
+      createdBy: req.session.userId,
+    });
+
+    if (req.body.status === 'send_now') {
+      message = await messages.deliverMessage(message);
     }
 
-    if (req.file) {
-      await evolution.sendGroupMedia({
-        text,
-        imageBase64: req.file.buffer.toString('base64'),
-        mimetype: req.file.mimetype,
-      });
-    } else {
-      await evolution.sendGroupText(text);
-    }
+    res.json({ message });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
+app.put('/api/admin/messages/:id', requireAuth, upload.single('image'), async (req, res) => {
+  try {
+    const image = req.file ? { base64: req.file.buffer.toString('base64'), mimetype: req.file.mimetype } : null;
+    const message = await messages.updateMessage(req.params.id, {
+      text: req.body.text,
+      image,
+      scheduledFor: req.body.scheduledFor || null,
+    });
+    res.json({ message });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/messages/:id', requireAuth, async (req, res) => {
+  try {
+    await messages.deleteMessage(req.params.id);
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.post('/api/admin/users', requireAuth, express.json(), async (req, res) => {
+app.post('/api/admin/messages/:id/send', requireAuth, async (req, res) => {
   try {
-    const user = await adminUsers.createUser(req.body || {});
-    res.json({ user });
+    const message = await messages.getMessage(req.params.id);
+    if (!message) return res.status(404).json({ error: 'mensagem não encontrada' });
+    if (message.status === 'sent') return res.status(400).json({ error: 'essa mensagem já foi enviada' });
+
+    const result = await messages.deliverMessage(message);
+    res.json({ message: result });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -182,8 +267,9 @@ function withTimeout(promise, ms, label) {
 }
 
 if (process.env.DATABASE_URL) {
-  Promise.all([ensureLeadsSchema(), adminUsers.ensureSchema()])
+  Promise.all([ensureLeadsSchema(), adminUsers.ensureSchema(), messages.ensureSchema()])
     .then(() => adminUsers.ensureBootstrapAdmin())
+    .then(() => startScheduler())
     .catch((err) => {
       console.error('Falha ao preparar o banco de dados:', err.message);
     });

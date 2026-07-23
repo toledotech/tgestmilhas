@@ -5,79 +5,209 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Painel Admin — Alerta de Milhas</title>
 <style>
-  :root { --bg:#0b1220; --card:#121b2e; --accent:#7fe08a; --accent-dark:#05130a; --text:#f2f5f9; --muted:#9aa7bd; --border:#263654; }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
-  header { display: flex; justify-content: space-between; align-items: center; padding: 20px 28px; border-bottom: 1px solid var(--border); }
-  header h1 { font-size: 1.15rem; margin: 0; }
-  header form { margin: 0; }
-  header button { background: none; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; border-radius: 8px; cursor: pointer; }
-  main { max-width: 960px; margin: 0 auto; padding: 28px; display: grid; gap: 28px; }
-  .card { background: var(--card); border-radius: 14px; padding: 24px; border: 1px solid rgba(255,255,255,0.04); }
-  .card h2 { margin: 0 0 16px; font-size: 1.05rem; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 600; }
-  .muted { color: var(--muted); }
-  label { display: block; font-size: 0.85rem; margin: 12px 0 6px; color: var(--muted); }
-  textarea, input[type="text"], input[type="password"] {
-    width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
-    background: #0d1626; color: var(--text); font-size: 1rem; font-family: inherit;
+  :root {
+    --bg: #0b1220; --bg-elev: #0d1626; --card: #121b2e; --card2: #16213a;
+    --accent: #7fe08a; --accent-dark: #05130a; --warm: #ff8a5c;
+    --text: #f2f5f9; --muted: #9aa7bd; --border: #223151;
+    --danger: #ff8a8a;
   }
-  textarea { min-height: 100px; resize: vertical; }
-  input[type="file"] { margin-top: 8px; color: var(--muted); }
-  button.primary { margin-top: 16px; padding: 12px 20px; border-radius: 10px; border: none; background: var(--accent); color: var(--accent-dark); font-weight: 700; cursor: pointer; }
-  button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
-  .msg { margin-top: 10px; font-size: 0.88rem; min-height: 1.2em; }
-  .msg.error { color: #ff8a8a; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); display: flex; min-height: 100vh;
+  }
+  a { color: inherit; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px; flex-shrink: 0; background: var(--bg-elev); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 20px 0;
+  }
+  .sidebar .brand { padding: 0 20px 20px; font-weight: 700; font-size: 1.05rem; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .sidebar .brand span { color: var(--accent); }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 11px 20px; color: var(--muted);
+    cursor: pointer; font-size: 0.92rem; border-left: 3px solid transparent;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+  .nav-item.active { color: var(--text); background: rgba(127,224,138,0.08); border-left-color: var(--accent); }
+  .sidebar-footer { margin-top: auto; padding: 16px 20px 0; border-top: 1px solid var(--border); }
+  .sidebar-footer .user { font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
+  .sidebar-footer button {
+    width: 100%; background: none; border: 1px solid var(--border); color: var(--muted);
+    padding: 9px; border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+  }
+  .sidebar-footer button:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Main */
+  .main { flex: 1; padding: 28px 32px; max-width: 1180px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+  .view-header h1 { font-size: 1.4rem; margin: 0; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 9px;
+    border: none; background: var(--accent); color: var(--accent-dark); font-weight: 700;
+    font-size: 0.88rem; cursor: pointer; text-decoration: none;
+  }
+  .btn.secondary { background: none; border: 1px solid var(--border); color: var(--text); font-weight: 600; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Metric cards */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 26px; }
+  @media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+  .metric-card { background: var(--card); border: 1px solid rgba(255,255,255,0.04); border-radius: 12px; padding: 18px 20px; }
+  .metric-card .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+  .metric-card .value { font-size: 1.6rem; font-weight: 700; }
+
+  /* Table card */
+  .card { background: var(--card); border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); overflow: hidden; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .card-header h2 { font-size: 1rem; margin: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  th, td { text-align: left; padding: 12px 20px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .muted { color: var(--muted); }
+  .actions-cell { white-space: nowrap; }
+  .actions-cell button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 4px 6px; }
+  .actions-cell button:hover { color: var(--text); }
+  .actions-cell button.danger:hover { color: var(--danger); }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+  .badge.draft { background: rgba(154,167,189,0.15); color: var(--muted); }
+  .badge.scheduled { background: rgba(255,138,92,0.15); color: var(--warm); }
+  .badge.sent { background: rgba(127,224,138,0.15); color: var(--accent); }
+  .badge.failed { background: rgba(255,138,138,0.15); color: var(--danger); }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--card2); border-radius: 14px; padding: 26px; max-width: 460px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 18px; font-size: 1.1rem; }
+  label { display: block; font-size: 0.85rem; margin: 14px 0 6px; color: var(--muted); }
+  textarea, input[type="text"], input[type="password"], input[type="datetime-local"] {
+    width: 100%; padding: 11px 13px; border-radius: 9px; border: 1px solid var(--border);
+    background: #0d1626; color: var(--text); font-size: 0.95rem; font-family: inherit;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  .radio-group { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+  .radio-group label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 0.85rem; color: var(--text); cursor: pointer; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+  .msg { margin-top: 10px; font-size: 0.85rem; min-height: 1.2em; }
+  .msg.error { color: var(--danger); }
   .msg.success { color: var(--accent); }
+  .empty { padding: 32px 20px; text-align: center; color: var(--muted); }
 </style>
 </head>
 <body>
-  <header>
-    <h1>Painel Admin — Alerta de Milhas</h1>
-    <form method="POST" action="/admin/logout"><button type="submit">Sair</button></form>
-  </header>
 
-  <main>
-    <section class="card">
-      <h2>Enviar mensagem para o grupo</h2>
-      <form id="broadcast-form">
-        <label for="text">Mensagem</label>
-        <textarea id="text" name="text" placeholder="Ex: 🔥 Passagem encontrada! GRU → MIA por 12.000 milhas + R$89..."></textarea>
+  <nav class="sidebar">
+    <div class="brand">Alerta de <span>Milhas</span></div>
+    <div class="nav-item active" data-view="messages">📨 Mensagens</div>
+    <div class="nav-item" data-view="leads">👥 Leads</div>
+    <div class="nav-item" data-view="users">🔑 Usuários</div>
+    <div class="sidebar-footer">
+      <div class="user" id="current-user"></div>
+      <form method="POST" action="/admin/logout"><button type="submit">Sair</button></form>
+    </div>
+  </nav>
 
-        <label for="image">Imagem (opcional)</label>
-        <input type="file" id="image" name="image" accept="image/*" />
+  <main class="main">
 
-        <button type="submit" class="primary" id="broadcast-btn">Enviar para o grupo</button>
-        <div class="msg" id="broadcast-msg"></div>
-      </form>
+    <!-- Mensagens -->
+    <section class="view active" id="view-messages">
+      <div class="view-header">
+        <h1>Mensagens</h1>
+        <div style="display:flex; gap:10px;">
+          <a class="btn secondary" href="/api/admin/messages/export.csv">⬇️ Exportar CSV</a>
+          <button class="btn" id="new-message-btn">+ Nova mensagem</button>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric-card"><div class="label">Enviadas</div><div class="value" id="stat-sent">–</div></div>
+        <div class="metric-card"><div class="label">Agendadas</div><div class="value" id="stat-scheduled">–</div></div>
+        <div class="metric-card"><div class="label">Rascunhos</div><div class="value" id="stat-draft">–</div></div>
+        <div class="metric-card"><div class="label">Falharam</div><div class="value" id="stat-failed">–</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Histórico</h2></div>
+        <table>
+          <thead><tr><th>Status</th><th>Mensagem</th><th>Data</th><th></th></tr></thead>
+          <tbody id="messages-body"><tr><td colspan="4" class="empty">Carregando…</td></tr></tbody>
+        </table>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>Leads capturados (<span id="lead-count">…</span>)</h2>
-      <table>
-        <thead>
-          <tr><th>Email</th><th>Perfil</th><th>Data</th></tr>
-        </thead>
-        <tbody id="leads-body">
-          <tr><td colspan="3" class="muted">Carregando…</td></tr>
-        </tbody>
-      </table>
+    <!-- Leads -->
+    <section class="view" id="view-leads">
+      <div class="view-header"><h1>Leads</h1></div>
+      <div class="metrics" style="grid-template-columns: 1fr;">
+        <div class="metric-card"><div class="label">Total de leads</div><div class="value" id="stat-leads">–</div></div>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Email</th><th>Perfil</th><th>Data</th></tr></thead>
+          <tbody id="leads-body"><tr><td colspan="3" class="empty">Carregando…</td></tr></tbody>
+        </table>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>Adicionar administrador</h2>
-      <form id="user-form">
-        <label for="new-username">Usuário</label>
-        <input type="text" id="new-username" name="username" required />
-        <label for="new-password">Senha (mínimo 8 caracteres)</label>
-        <input type="password" id="new-password" name="password" required minlength="8" />
-        <button type="submit" class="primary" id="user-btn">Criar usuário</button>
-        <div class="msg" id="user-msg"></div>
-      </form>
+    <!-- Usuários -->
+    <section class="view" id="view-users">
+      <div class="view-header"><h1>Usuários</h1></div>
+      <div class="card" style="padding: 22px;">
+        <h2 style="margin:0 0 4px; font-size:1rem;">Adicionar administrador</h2>
+        <p class="muted" style="margin:0 0 4px; font-size:0.85rem;">Ele vai poder ver leads e enviar mensagens pro grupo.</p>
+        <form id="user-form">
+          <label for="new-username">Usuário</label>
+          <input type="text" id="new-username" name="username" required />
+          <label for="new-password">Senha (mínimo 8 caracteres)</label>
+          <input type="password" id="new-password" name="password" required minlength="8" />
+          <button type="submit" class="btn" style="margin-top:16px;" id="user-btn">Criar usuário</button>
+          <div class="msg" id="user-msg"></div>
+        </form>
+      </div>
     </section>
+
   </main>
+
+  <!-- Modal: nova/editar mensagem -->
+  <div class="modal-backdrop" id="message-modal">
+    <div class="modal">
+      <h3 id="modal-title">Nova mensagem</h3>
+      <form id="message-form">
+        <input type="hidden" id="message-id" />
+        <label for="message-text">Mensagem</label>
+        <textarea id="message-text" placeholder="Ex: 🔥 Passagem encontrada! GRU → MIA por 12.000 milhas + R$89..."></textarea>
+
+        <label for="message-image">Imagem (opcional)</label>
+        <input type="file" id="message-image" accept="image/*" />
+
+        <label>Quando enviar?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="send-mode" value="send_now" checked /> Enviar agora</label>
+          <label><input type="radio" name="send-mode" value="draft" /> Salvar como rascunho</label>
+          <label><input type="radio" name="send-mode" value="scheduled" /> Agendar</label>
+        </div>
+        <div id="schedule-field" style="display:none;">
+          <label for="scheduled-for">Data e hora</label>
+          <input type="datetime-local" id="scheduled-for" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn secondary" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn" id="message-submit-btn">Salvar</button>
+        </div>
+        <div class="msg" id="message-msg"></div>
+      </form>
+    </div>
+  </div>
 
 <script>
   const PROFILE_LABELS = {
@@ -86,66 +216,194 @@
     internacional_1_2: 'Internacional 1-2x/ano',
     frequente_4mais: 'Frequente (4+/ano)',
   };
-
-  async function loadLeads() {
-    const res = await fetch('/api/admin/leads');
-    const data = await res.json();
-    const body = document.getElementById('leads-body');
-    const leads = data.leads || [];
-
-    document.getElementById('lead-count').textContent = leads.length;
-
-    if (!leads.length) {
-      body.innerHTML = '<tr><td colspan="3" class="muted">Nenhum lead ainda.</td></tr>';
-      return;
-    }
-
-    body.innerHTML = leads.map((l) => `
-      <tr>
-        <td>${escapeHtml(l.email)}</td>
-        <td>${PROFILE_LABELS[l.profile] || l.profile}</td>
-        <td class="muted">${new Date(l.created_at).toLocaleString('pt-BR')}</td>
-      </tr>
-    `).join('');
-  }
+  const STATUS_LABELS = { draft: 'Rascunho', scheduled: 'Agendada', sent: 'Enviada', failed: 'Falhou' };
 
   function escapeHtml(str) {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = str == null ? '' : str;
     return div.innerHTML;
   }
 
-  document.getElementById('broadcast-form').addEventListener('submit', async (e) => {
+  // --- Navegação ---
+  document.querySelectorAll('.nav-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach((i) => i.classList.remove('active'));
+      document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('view-' + item.dataset.view).classList.add('active');
+    });
+  });
+
+  // --- Leads ---
+  async function loadLeads() {
+    const res = await fetch('/api/admin/leads');
+    const data = await res.json();
+    const leads = data.leads || [];
+    document.getElementById('stat-leads').textContent = leads.length;
+
+    const body = document.getElementById('leads-body');
+    body.innerHTML = leads.length
+      ? leads.map((l) => `
+        <tr>
+          <td>${escapeHtml(l.email)}</td>
+          <td>${PROFILE_LABELS[l.profile] || l.profile}</td>
+          <td class="muted">${new Date(l.created_at).toLocaleString('pt-BR')}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="3" class="empty">Nenhum lead ainda.</td></tr>';
+  }
+
+  // --- Mensagens ---
+  async function loadMessages() {
+    const res = await fetch('/api/admin/messages');
+    const data = await res.json();
+    const list = data.messages || [];
+    const stats = data.stats || {};
+
+    document.getElementById('stat-sent').textContent = stats.sent || 0;
+    document.getElementById('stat-scheduled').textContent = stats.scheduled || 0;
+    document.getElementById('stat-draft').textContent = stats.draft || 0;
+    document.getElementById('stat-failed').textContent = stats.failed || 0;
+
+    const body = document.getElementById('messages-body');
+    body.innerHTML = list.length
+      ? list.map((m) => renderMessageRow(m)).join('')
+      : '<tr><td colspan="4" class="empty">Nenhuma mensagem ainda.</td></tr>';
+
+    body.querySelectorAll('[data-action]').forEach((btn) => {
+      btn.addEventListener('click', () => handleMessageAction(btn.dataset.action, btn.dataset.id, list));
+    });
+  }
+
+  function renderMessageRow(m) {
+    const dateLabel = m.status === 'sent' ? (m.sent_at ? new Date(m.sent_at).toLocaleString('pt-BR') : '')
+      : m.status === 'scheduled' ? (m.scheduled_for ? new Date(m.scheduled_for).toLocaleString('pt-BR') : '')
+      : new Date(m.created_at).toLocaleString('pt-BR');
+
+    const preview = (m.text || '(sem texto, só imagem)').slice(0, 70);
+    const canEdit = m.status === 'draft' || m.status === 'scheduled';
+
+    return `
+      <tr>
+        <td><span class="badge ${m.status}">${STATUS_LABELS[m.status] || m.status}</span></td>
+        <td>${escapeHtml(preview)}${m.image_base64 ? ' 📎' : ''}${m.status === 'failed' && m.error ? `<div class="muted" style="font-size:0.78rem; margin-top:4px;">${escapeHtml(m.error)}</div>` : ''}</td>
+        <td class="muted">${dateLabel}</td>
+        <td class="actions-cell">
+          ${canEdit ? `<button data-action="edit" data-id="${m.id}">Editar</button>` : ''}
+          ${canEdit ? `<button data-action="send" data-id="${m.id}">Enviar agora</button>` : ''}
+          ${canEdit ? `<button data-action="delete" data-id="${m.id}" class="danger">Excluir</button>` : ''}
+        </td>
+      </tr>`;
+  }
+
+  async function handleMessageAction(action, id, list) {
+    if (action === 'edit') {
+      const message = list.find((m) => String(m.id) === String(id));
+      openMessageModal(message);
+    } else if (action === 'delete') {
+      if (!confirm('Excluir essa mensagem?')) return;
+      await fetch('/api/admin/messages/' + id, { method: 'DELETE' });
+      loadMessages();
+    } else if (action === 'send') {
+      if (!confirm('Enviar essa mensagem pro grupo agora?')) return;
+      await fetch('/api/admin/messages/' + id + '/send', { method: 'POST' });
+      loadMessages();
+    }
+  }
+
+  // --- Modal de mensagem ---
+  const modal = document.getElementById('message-modal');
+  const messageForm = document.getElementById('message-form');
+
+  document.getElementById('new-message-btn').addEventListener('click', () => openMessageModal(null));
+  document.getElementById('modal-cancel').addEventListener('click', closeMessageModal);
+
+  document.querySelectorAll('input[name="send-mode"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      document.getElementById('schedule-field').style.display =
+        document.querySelector('input[name="send-mode"]:checked').value === 'scheduled' ? 'block' : 'none';
+    });
+  });
+
+  function openMessageModal(message) {
+    messageForm.reset();
+    document.getElementById('message-msg').textContent = '';
+    document.getElementById('schedule-field').style.display = 'none';
+
+    if (message) {
+      document.getElementById('modal-title').textContent = 'Editar mensagem';
+      document.getElementById('message-id').value = message.id;
+      document.getElementById('message-text').value = message.text || '';
+      document.querySelector(`input[name="send-mode"][value="${message.status === 'scheduled' ? 'scheduled' : 'draft'}"]`).checked = true;
+      if (message.status === 'scheduled' && message.scheduled_for) {
+        document.getElementById('scheduled-for').value = new Date(message.scheduled_for).toISOString().slice(0, 16);
+        document.getElementById('schedule-field').style.display = 'block';
+      }
+      document.querySelectorAll('input[name="send-mode"]').forEach((r) => { r.parentElement.style.display = r.value === 'send_now' ? 'none' : 'flex'; });
+    } else {
+      document.getElementById('modal-title').textContent = 'Nova mensagem';
+      document.getElementById('message-id').value = '';
+      document.querySelectorAll('input[name="send-mode"]').forEach((r) => { r.parentElement.style.display = 'flex'; });
+    }
+
+    modal.classList.add('open');
+  }
+
+  function closeMessageModal() {
+    modal.classList.remove('open');
+  }
+
+  messageForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('broadcast-btn');
-    const msg = document.getElementById('broadcast-msg');
+    const btn = document.getElementById('message-submit-btn');
+    const msg = document.getElementById('message-msg');
     msg.textContent = '';
     msg.className = 'msg';
     btn.disabled = true;
-    btn.textContent = 'Enviando...';
+
+    const id = document.getElementById('message-id').value;
+    const mode = document.querySelector('input[name="send-mode"]:checked').value;
 
     const formData = new FormData();
-    formData.append('text', document.getElementById('text').value);
-    const file = document.getElementById('image').files[0];
+    formData.append('text', document.getElementById('message-text').value);
+    const file = document.getElementById('message-image').files[0];
     if (file) formData.append('image', file);
 
-    try {
-      const res = await fetch('/api/admin/broadcast', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'falha ao enviar');
+    if (id) {
+      // edição: mantém o status atual (draft/scheduled), só atualiza conteúdo/data
+      if (mode === 'scheduled') formData.append('scheduledFor', document.getElementById('scheduled-for').value);
+      try {
+        const res = await fetch('/api/admin/messages/' + id, { method: 'PUT', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        closeMessageModal();
+        loadMessages();
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'msg error';
+      } finally {
+        btn.disabled = false;
+      }
+      return;
+    }
 
-      msg.textContent = 'Mensagem enviada para o grupo!';
-      msg.className = 'msg success';
-      e.target.reset();
+    formData.append('status', mode);
+    if (mode === 'scheduled') formData.append('scheduledFor', document.getElementById('scheduled-for').value);
+
+    try {
+      const res = await fetch('/api/admin/messages', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      closeMessageModal();
+      loadMessages();
     } catch (err) {
       msg.textContent = err.message;
       msg.className = 'msg error';
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Enviar para o grupo';
     }
   });
 
+  // --- Usuários ---
   document.getElementById('user-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('user-btn');
@@ -167,7 +425,6 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'falha ao criar usuário');
-
       msg.textContent = `Usuário "${data.user.username}" criado!`;
       msg.className = 'msg success';
       e.target.reset();
@@ -179,6 +436,7 @@
     }
   });
 
+  loadMessages();
   loadLeads();
 </script>
 </body>
