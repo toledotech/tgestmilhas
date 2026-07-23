@@ -9,19 +9,53 @@ estratégia de monetização).
 ## Landing page (captura de leads)
 
 `public/index.html` — formulário de email + perfil de viajante, salvo via
-`POST /api/leads` em `data/leads.jsonl` (um JSON por linha; pasta ignorada no
-git por conter dados pessoais). Ao cadastrar, mostra o link do grupo gratuito
-definido em `FREE_GROUP_URL` (`.env`) — troque pelo link real assim que o
-grupo (WhatsApp ou Telegram) existir.
+`POST /api/leads` na tabela `leads` do Postgres (`DATABASE_URL`). Ao
+cadastrar, mostra o link do grupo gratuito definido em `FREE_GROUP_URL`
+(`.env`) — troque pelo link real assim que o grupo (WhatsApp ou Telegram)
+existir.
 
 ```bash
 npm run dev
 # abra http://localhost:3000
 ```
 
-Quando o volume de leads justificar, é fácil migrar `src/leads.js` de arquivo
-para Google Sheets ou um banco de dados — a função `saveLead()` é o único
-ponto de escrita.
+## Painel admin (`/admin`)
+
+Painel protegido por login (múltiplos usuários) para:
+- ver a lista de leads capturados
+- escrever e disparar uma mensagem (texto + imagem opcional) direto pro
+  grupo do WhatsApp, via Evolution API
+
+### Setup
+
+1. **Banco**: `DATABASE_URL` já configurada (mesma do `/api/leads`) — as
+   tabelas `admin_users` e `admin_sessions` são criadas automaticamente.
+2. **Primeiro admin**: defina `ADMIN_BOOTSTRAP_USER` e
+   `ADMIN_BOOTSTRAP_PASSWORD` no `.env` antes do primeiro deploy — se a
+   tabela `admin_users` estiver vazia, esse usuário é criado no startup.
+   Depois disso, use o próprio painel (seção "Adicionar administrador") pra
+   cadastrar outros — essas duas variáveis não têm mais efeito depois que o
+   primeiro usuário existe.
+3. **Sessão**: defina `SESSION_SECRET` com uma string aleatória longa.
+4. **Evolution API — instância dedicada**: **não reaproveite** uma instância
+   de WhatsApp que já seja usada para atendimento do negócio. Crie uma nova
+   instância só para o grupo do Alerta de Milhas:
+   ```bash
+   curl -X POST http://<evolution-api>/instance/create \
+     -H "Content-Type: application/json" -H "apikey: <API_KEY>" \
+     -d '{"instanceName": "alertademilhas", "qrcode": true}'
+   ```
+   Escaneie o QR code retornado com o número dedicado. Adicione esse número
+   como participante do grupo gratuito, depois busque o JID do grupo:
+   ```bash
+   curl -H "apikey: <API_KEY>" \
+     http://<evolution-api>/group/fetchAllGroups/alertademilhas?getParticipants=false
+   ```
+   Preencha `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE` e
+   `WHATSAPP_GROUP_JID` no `.env` com os valores encontrados.
+
+Login em `/admin/login`; sem sessão válida, `/admin` e `/api/admin/*`
+redirecionam/retornam 401.
 
 ## Rodando localmente (scraper)
 

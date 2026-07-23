@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Painel Admin — Alerta de Milhas</title>
+<style>
+  :root { --bg:#0b1220; --card:#121b2e; --accent:#7fe08a; --accent-dark:#05130a; --text:#f2f5f9; --muted:#9aa7bd; --border:#263654; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 20px 28px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 1.15rem; margin: 0; }
+  header form { margin: 0; }
+  header button { background: none; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+  main { max-width: 960px; margin: 0 auto; padding: 28px; display: grid; gap: 28px; }
+  .card { background: var(--card); border-radius: 14px; padding: 24px; border: 1px solid rgba(255,255,255,0.04); }
+  .card h2 { margin: 0 0 16px; font-size: 1.05rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  .muted { color: var(--muted); }
+  label { display: block; font-size: 0.85rem; margin: 12px 0 6px; color: var(--muted); }
+  textarea, input[type="text"], input[type="password"] {
+    width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+    background: #0d1626; color: var(--text); font-size: 1rem; font-family: inherit;
+  }
+  textarea { min-height: 100px; resize: vertical; }
+  input[type="file"] { margin-top: 8px; color: var(--muted); }
+  button.primary { margin-top: 16px; padding: 12px 20px; border-radius: 10px; border: none; background: var(--accent); color: var(--accent-dark); font-weight: 700; cursor: pointer; }
+  button.primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .msg { margin-top: 10px; font-size: 0.88rem; min-height: 1.2em; }
+  .msg.error { color: #ff8a8a; }
+  .msg.success { color: var(--accent); }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Painel Admin — Alerta de Milhas</h1>
+    <form method="POST" action="/admin/logout"><button type="submit">Sair</button></form>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Enviar mensagem para o grupo</h2>
+      <form id="broadcast-form">
+        <label for="text">Mensagem</label>
+        <textarea id="text" name="text" placeholder="Ex: 🔥 Passagem encontrada! GRU → MIA por 12.000 milhas + R$89..."></textarea>
+
+        <label for="image">Imagem (opcional)</label>
+        <input type="file" id="image" name="image" accept="image/*" />
+
+        <button type="submit" class="primary" id="broadcast-btn">Enviar para o grupo</button>
+        <div class="msg" id="broadcast-msg"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Leads capturados (<span id="lead-count">…</span>)</h2>
+      <table>
+        <thead>
+          <tr><th>Email</th><th>Perfil</th><th>Data</th></tr>
+        </thead>
+        <tbody id="leads-body">
+          <tr><td colspan="3" class="muted">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Adicionar administrador</h2>
+      <form id="user-form">
+        <label for="new-username">Usuário</label>
+        <input type="text" id="new-username" name="username" required />
+        <label for="new-password">Senha (mínimo 8 caracteres)</label>
+        <input type="password" id="new-password" name="password" required minlength="8" />
+        <button type="submit" class="primary" id="user-btn">Criar usuário</button>
+        <div class="msg" id="user-msg"></div>
+      </form>
+    </section>
+  </main>
+
+<script>
+  const PROFILE_LABELS = {
+    quase_nunca: 'Quase nunca viaja',
+    nacional_1_2: 'Nacional 1-2x/ano',
+    internacional_1_2: 'Internacional 1-2x/ano',
+    frequente_4mais: 'Frequente (4+/ano)',
+  };
+
+  async function loadLeads() {
+    const res = await fetch('/api/admin/leads');
+    const data = await res.json();
+    const body = document.getElementById('leads-body');
+    const leads = data.leads || [];
+
+    document.getElementById('lead-count').textContent = leads.length;
+
+    if (!leads.length) {
+      body.innerHTML = '<tr><td colspan="3" class="muted">Nenhum lead ainda.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = leads.map((l) => `
+      <tr>
+        <td>${escapeHtml(l.email)}</td>
+        <td>${PROFILE_LABELS[l.profile] || l.profile}</td>
+        <td class="muted">${new Date(l.created_at).toLocaleString('pt-BR')}</td>
+      </tr>
+    `).join('');
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  document.getElementById('broadcast-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('broadcast-btn');
+    const msg = document.getElementById('broadcast-msg');
+    msg.textContent = '';
+    msg.className = 'msg';
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    const formData = new FormData();
+    formData.append('text', document.getElementById('text').value);
+    const file = document.getElementById('image').files[0];
+    if (file) formData.append('image', file);
+
+    try {
+      const res = await fetch('/api/admin/broadcast', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'falha ao enviar');
+
+      msg.textContent = 'Mensagem enviada para o grupo!';
+      msg.className = 'msg success';
+      e.target.reset();
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'msg error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Enviar para o grupo';
+    }
+  });
+
+  document.getElementById('user-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('user-btn');
+    const msg = document.getElementById('user-msg');
+    msg.textContent = '';
+    msg.className = 'msg';
+    btn.disabled = true;
+
+    const payload = {
+      username: document.getElementById('new-username').value,
+      password: document.getElementById('new-password').value,
+    };
+
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'falha ao criar usuário');
+
+      msg.textContent = `Usuário "${data.user.username}" criado!`;
+      msg.className = 'msg success';
+      e.target.reset();
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'msg error';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  loadLeads();
+</script>
+</body>
+</html>

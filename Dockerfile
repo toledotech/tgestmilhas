@@ -7,6 +7,7 @@ RUN npm install --omit=dev
 
 COPY src ./src
 COPY public ./public
+COPY views ./views
 
 ENV PORT=3000
 EXPOSE 3000

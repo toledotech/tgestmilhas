@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+const { pool } = require('./db');
 
 const VALID_PROFILES = new Set([
   'quase_nunca',
@@ -8,8 +8,6 @@ const VALID_PROFILES = new Set([
 ]);
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function ensureSchema() {
   await pool.query(`
@@ -41,4 +39,11 @@ async function saveLead({ email, profile }) {
   return result.rows[0];
 }
 
-module.exports = { saveLead, ensureSchema };
+async function getAllLeads() {
+  const result = await pool.query(
+    `SELECT email, profile, created_at FROM leads ORDER BY created_at DESC`
+  );
+  return result.rows;
+}
+
+module.exports = { saveLead, getAllLeads, ensureSchema };
