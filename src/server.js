@@ -129,10 +129,44 @@ app.get('/api/admin/leads', requireAuth, async (req, res) => {
   }
 });
 
+app.get('/api/admin/users', requireAuth, async (req, res) => {
+  try {
+    const users = await adminUsers.listUsers();
+    res.json({ users });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/admin/users', requireAuth, express.json(), async (req, res) => {
   try {
     const user = await adminUsers.createUser(req.body || {});
     res.json({ user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/admin/users/:id', requireAuth, express.json(), async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    const user = await adminUsers.updateUser(req.params.id, {
+      username: username || undefined,
+      password: password || undefined,
+    });
+    res.json({ user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', requireAuth, async (req, res) => {
+  try {
+    if (String(req.session.userId) === String(req.params.id)) {
+      return res.status(400).json({ error: 'você não pode excluir seu próprio usuário' });
+    }
+    await adminUsers.deleteUser(req.params.id);
+    res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

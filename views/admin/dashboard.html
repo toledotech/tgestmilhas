@@ -160,18 +160,16 @@
 
     <!-- Usuários -->
     <section class="view" id="view-users">
-      <div class="view-header"><h1>Usuários</h1></div>
-      <div class="card" style="padding: 22px;">
-        <h2 style="margin:0 0 4px; font-size:1rem;">Adicionar administrador</h2>
-        <p class="muted" style="margin:0 0 4px; font-size:0.85rem;">Ele vai poder ver leads e enviar mensagens pro grupo.</p>
-        <form id="user-form">
-          <label for="new-username">Usuário</label>
-          <input type="text" id="new-username" name="username" required />
-          <label for="new-password">Senha (mínimo 8 caracteres)</label>
-          <input type="password" id="new-password" name="password" required minlength="8" />
-          <button type="submit" class="btn" style="margin-top:16px;" id="user-btn">Criar usuário</button>
-          <div class="msg" id="user-msg"></div>
-        </form>
+      <div class="view-header">
+        <h1>Usuários</h1>
+        <button class="btn" id="new-user-btn">+ Novo usuário</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Administradores cadastrados</h2></div>
+        <table>
+          <thead><tr><th>Usuário</th><th>Criado em</th><th></th></tr></thead>
+          <tbody id="users-body"><tr><td colspan="3" class="empty">Carregando…</td></tr></tbody>
+        </table>
       </div>
     </section>
 
@@ -205,6 +203,26 @@
           <button type="submit" class="btn" id="message-submit-btn">Salvar</button>
         </div>
         <div class="msg" id="message-msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: novo/editar usuário -->
+  <div class="modal-backdrop" id="user-modal">
+    <div class="modal">
+      <h3 id="user-modal-title">Novo usuário</h3>
+      <form id="user-form">
+        <input type="hidden" id="user-id" />
+        <label for="user-username">Usuário</label>
+        <input type="text" id="user-username" required />
+        <label for="user-password">Senha <span id="user-password-hint" class="muted"></span></label>
+        <input type="password" id="user-password" minlength="8" />
+
+        <div class="modal-actions">
+          <button type="button" class="btn secondary" id="user-modal-cancel">Cancelar</button>
+          <button type="submit" class="btn" id="user-submit-btn">Salvar</button>
+        </div>
+        <div class="msg" id="user-msg"></div>
       </form>
     </div>
   </div>
@@ -424,30 +442,95 @@
   });
 
   // --- Usuários ---
-  document.getElementById('user-form').addEventListener('submit', async (e) => {
+  let currentUsers = [];
+
+  async function loadUsers() {
+    const res = await fetch('/api/admin/users');
+    const data = await res.json();
+    currentUsers = data.users || [];
+
+    const body = document.getElementById('users-body');
+    body.innerHTML = currentUsers.length
+      ? currentUsers.map((u) => `
+        <tr>
+          <td>${escapeHtml(u.username)}</td>
+          <td class="muted">${new Date(u.created_at).toLocaleString('pt-BR')}</td>
+          <td class="actions-cell">
+            <button data-user-action="edit" data-id="${u.id}">Editar</button>
+            <button data-user-action="delete" data-id="${u.id}" class="danger">Excluir</button>
+          </td>
+        </tr>`).join('')
+      : '<tr><td colspan="3" class="empty">Nenhum usuário ainda.</td></tr>';
+
+    body.querySelectorAll('[data-user-action]').forEach((btn) => {
+      btn.addEventListener('click', () => handleUserAction(btn.dataset.userAction, btn.dataset.id));
+    });
+  }
+
+  async function handleUserAction(action, id) {
+    if (action === 'edit') {
+      const user = currentUsers.find((u) => String(u.id) === String(id));
+      openUserModal(user);
+    } else if (action === 'delete') {
+      if (!confirm('Excluir esse usuário?')) return;
+      const res = await fetch('/api/admin/users/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error || 'falha ao excluir usuário');
+      loadUsers();
+    }
+  }
+
+  const userModal = document.getElementById('user-modal');
+  const userForm = document.getElementById('user-form');
+
+  document.getElementById('new-user-btn').addEventListener('click', () => openUserModal(null));
+  document.getElementById('user-modal-cancel').addEventListener('click', () => userModal.classList.remove('open'));
+
+  function openUserModal(user) {
+    userForm.reset();
+    document.getElementById('user-msg').textContent = '';
+
+    if (user) {
+      document.getElementById('user-modal-title').textContent = 'Editar usuário';
+      document.getElementById('user-id').value = user.id;
+      document.getElementById('user-username').value = user.username;
+      document.getElementById('user-password').required = false;
+      document.getElementById('user-password-hint').textContent = '(deixe em branco para manter a atual)';
+    } else {
+      document.getElementById('user-modal-title').textContent = 'Novo usuário';
+      document.getElementById('user-id').value = '';
+      document.getElementById('user-password').required = true;
+      document.getElementById('user-password-hint').textContent = '(mínimo 8 caracteres)';
+    }
+
+    userModal.classList.add('open');
+  }
+
+  userForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('user-btn');
+    const btn = document.getElementById('user-submit-btn');
     const msg = document.getElementById('user-msg');
     msg.textContent = '';
     msg.className = 'msg';
     btn.disabled = true;
 
-    const payload = {
-      username: document.getElementById('new-username').value,
-      password: document.getElementById('new-password').value,
-    };
+    const id = document.getElementById('user-id').value;
+    const username = document.getElementById('user-username').value;
+    const password = document.getElementById('user-password').value;
+
+    const payload = { username };
+    if (password) payload.password = password;
 
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
+      const res = await fetch(id ? '/api/admin/users/' + id : '/api/admin/users', {
+        method: id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'falha ao criar usuário');
-      msg.textContent = `Usuário "${data.user.username}" criado!`;
-      msg.className = 'msg success';
-      e.target.reset();
+      if (!res.ok) throw new Error(data.error || 'falha ao salvar usuário');
+      userModal.classList.remove('open');
+      loadUsers();
     } catch (err) {
       msg.textContent = err.message;
       msg.className = 'msg error';
@@ -458,6 +541,7 @@
 
   loadMessages();
   loadLeads();
+  loadUsers();
 </script>
 </body>
 </html>

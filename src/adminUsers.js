@@ -73,4 +73,56 @@ async function verifyUser({ username, password }) {
   return { id: user.id, username: user.username };
 }
 
-module.exports = { ensureSchema, ensureBootstrapAdmin, createUser, verifyUser };
+async function listUsers() {
+  const result = await pool.query(
+    'SELECT id, username, created_at FROM admin_users ORDER BY created_at ASC'
+  );
+  return result.rows;
+}
+
+async function updateUser(id, { username, password }) {
+  if (username !== undefined && !USERNAME_REGEX.test(username)) {
+    throw new Error('usuário inválido (use 3-32 caracteres: letras, números, ponto, _ ou -)');
+  }
+  if (password !== undefined && password.length < 8) {
+    throw new Error('senha precisa ter pelo menos 8 caracteres');
+  }
+
+  const passwordHash = password !== undefined ? await bcrypt.hash(password, SALT_ROUNDS) : null;
+
+  try {
+    const result = await pool.query(
+      `UPDATE admin_users SET
+         username = COALESCE($2, username),
+         password_hash = COALESCE($3, password_hash)
+       WHERE id = $1
+       RETURNING id, username, created_at`,
+      [id, username ?? null, passwordHash]
+    );
+    if (!result.rows[0]) throw new Error('usuário não encontrado');
+    return result.rows[0];
+  } catch (err) {
+    if (err.code === '23505') throw new Error('esse usuário já existe');
+    throw err;
+  }
+}
+
+async function deleteUser(id) {
+  const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM admin_users');
+  if (rows[0].count <= 1) {
+    throw new Error('não é possível excluir o último administrador');
+  }
+
+  const result = await pool.query('DELETE FROM admin_users WHERE id = $1 RETURNING id', [id]);
+  if (!result.rows[0]) throw new Error('usuário não encontrado');
+}
+
+module.exports = {
+  ensureSchema,
+  ensureBootstrapAdmin,
+  createUser,
+  verifyUser,
+  listUsers,
+  updateUser,
+  deleteUser,
+};
