@@ -225,6 +225,21 @@
     return div.innerHTML;
   }
 
+  // O <input type="datetime-local"> trabalha com hora LOCAL sem fuso — se
+  // mandarmos esse valor cru pro servidor, ele acaba sendo interpretado como
+  // UTC (3h de diferença de Brasília), disparando a mensagem na hora errada.
+  // toUtcIso() converte pro instante UTC correto antes de enviar;
+  // toLocalInputValue() faz o caminho inverso ao preencher o campo na edição.
+  function toUtcIso(localDatetimeValue) {
+    return localDatetimeValue ? new Date(localDatetimeValue).toISOString() : '';
+  }
+
+  function toLocalInputValue(isoUtcString) {
+    const d = new Date(isoUtcString);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
   // --- Navegação ---
   document.querySelectorAll('.nav-item').forEach((item) => {
     item.addEventListener('click', () => {
@@ -337,7 +352,7 @@
       document.getElementById('message-text').value = message.text || '';
       document.querySelector(`input[name="send-mode"][value="${message.status === 'scheduled' ? 'scheduled' : 'draft'}"]`).checked = true;
       if (message.status === 'scheduled' && message.scheduled_for) {
-        document.getElementById('scheduled-for').value = new Date(message.scheduled_for).toISOString().slice(0, 16);
+        document.getElementById('scheduled-for').value = toLocalInputValue(message.scheduled_for);
         document.getElementById('schedule-field').style.display = 'block';
       }
       document.querySelectorAll('input[name="send-mode"]').forEach((r) => { r.parentElement.style.display = r.value === 'send_now' ? 'none' : 'flex'; });
@@ -375,7 +390,7 @@
       // escondido no modo edição — ver openMessageModal) e agora é de fato
       // repassado pro backend, permitindo trocar rascunho <-> agendada.
       formData.append('status', mode);
-      if (mode === 'scheduled') formData.append('scheduledFor', document.getElementById('scheduled-for').value);
+      if (mode === 'scheduled') formData.append('scheduledFor', toUtcIso(document.getElementById('scheduled-for').value));
       try {
         const res = await fetch('/api/admin/messages/' + id, { method: 'PUT', body: formData });
         const data = await res.json();
