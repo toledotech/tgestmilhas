@@ -82,7 +82,7 @@ async function getDueScheduledMessages() {
   return result.rows;
 }
 
-async function updateMessage(id, { text, image, scheduledFor }) {
+async function updateMessage(id, { text, image, status, scheduledFor }) {
   const existing = await getMessage(id);
   if (!existing) throw new Error('mensagem não encontrada');
   if (!EDITABLE_STATUSES.has(existing.status)) {
@@ -94,16 +94,25 @@ async function updateMessage(id, { text, image, scheduledFor }) {
     image: image || (existing.image_base64 ? { base64: existing.image_base64 } : null),
   });
 
+  // status pode mudar entre draft <-> scheduled durante a edição (ex: usuário
+  // decide agendar um rascunho, ou volta uma agendada pra rascunho). Se não
+  // vier, mantém o status atual.
+  const newStatus = status && EDITABLE_STATUSES.has(status) ? status : existing.status;
+  if (newStatus === 'scheduled' && !scheduledFor && !existing.scheduled_for) {
+    throw new Error('informe a data/hora do agendamento');
+  }
+
   const result = await pool.query(
     `UPDATE messages SET
        text = COALESCE($2, text),
        image_base64 = COALESCE($3, image_base64),
        image_mimetype = COALESCE($4, image_mimetype),
-       scheduled_for = CASE WHEN status = 'scheduled' THEN COALESCE($5, scheduled_for) ELSE scheduled_for END,
+       status = $5,
+       scheduled_for = CASE WHEN $5 = 'scheduled' THEN COALESCE($6, scheduled_for) ELSE NULL END,
        updated_at = now()
      WHERE id = $1
      RETURNING *`,
-    [id, text ?? null, image ? image.base64 : null, image ? image.mimetype : null, scheduledFor || null]
+    [id, text ?? null, image ? image.base64 : null, image ? image.mimetype : null, newStatus, scheduledFor || null]
   );
 
   return result.rows[0];

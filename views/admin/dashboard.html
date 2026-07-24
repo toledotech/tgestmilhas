@@ -371,7 +371,10 @@
     if (file) formData.append('image', file);
 
     if (id) {
-      // edição: mantém o status atual (draft/scheduled), só atualiza conteúdo/data
+      // edição: mode pode ser 'draft' ou 'scheduled' (o rádio "enviar agora" fica
+      // escondido no modo edição — ver openMessageModal) e agora é de fato
+      // repassado pro backend, permitindo trocar rascunho <-> agendada.
+      formData.append('status', mode);
       if (mode === 'scheduled') formData.append('scheduledFor', document.getElementById('scheduled-for').value);
       try {
         const res = await fetch('/api/admin/messages/' + id, { method: 'PUT', body: formData });

@@ -4,6 +4,11 @@ const { pool } = require('./db');
 const SALT_ROUNDS = 12;
 const USERNAME_REGEX = /^[a-z0-9._-]{3,32}$/i;
 
+// Hash "de mentira" só pra manter o custo do bcrypt.compare constante
+// quando o usuário não existe — evita dar pra medir por tempo de resposta
+// se um username está cadastrado ou não.
+const DUMMY_HASH = '$2b$12$WsJsXE5AxNCPDUDbDgkMMegA9tScVObIoyvL9uMAlZ4p.DGw9nK0q';
+
 async function ensureSchema() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_users (
@@ -62,10 +67,8 @@ async function verifyUser({ username, password }) {
     [username]
   );
   const user = result.rows[0];
-  if (!user) return null;
-
-  const valid = await bcrypt.compare(password || '', user.password_hash);
-  if (!valid) return null;
+  const valid = await bcrypt.compare(password || '', user ? user.password_hash : DUMMY_HASH);
+  if (!user || !valid) return null;
 
   return { id: user.id, username: user.username };
 }

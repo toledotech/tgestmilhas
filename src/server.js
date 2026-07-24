@@ -4,6 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const { chromium } = require('playwright');
 
 const { pool } = require('./db');
@@ -26,7 +27,16 @@ const scrapers = {
   tudoazul: new TudoAzulScraper(),
 };
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) {
+      return cb(new Error('arquivo precisa ser uma imagem (jpeg, png, webp ou gif)'));
+    }
+    cb(null, true);
+  },
+});
 const ADMIN_VIEWS_DIR = path.join(__dirname, '..', 'views', 'admin');
 
 const app = express();
@@ -41,7 +51,12 @@ if (process.env.DATABASE_URL) {
       secret: process.env.SESSION_SECRET || 'dev-only-insecure-secret',
       resave: false,
       saveUninitialized: false,
-      cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 },
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      },
     })
   );
 }
@@ -65,11 +80,19 @@ app.post('/api/leads', async (req, res) => {
 
 // --- Admin: auth ---
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas tentativas de login. Tente novamente em alguns minutos.' },
+});
+
 app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(ADMIN_VIEWS_DIR, 'login.html'));
 });
 
-app.post('/admin/login', express.urlencoded({ extended: false }), async (req, res) => {
+app.post('/admin/login', loginLimiter, express.urlencoded({ extended: false }), async (req, res) => {
   try {
     const user = await adminUsers.verifyUser({ username: req.body.username, password: req.body.password });
     if (!user) return res.status(401).sendFile(path.join(ADMIN_VIEWS_DIR, 'login-error.html'));
@@ -122,6 +145,13 @@ app.get('/api/admin/messages', requireAuth, async (req, res) => {
   }
 });
 
+// Neutraliza início de fórmula (Excel/Sheets executam células que começam
+// com =, +, -, @) antes de colocar texto vindo de usuário num CSV.
+function csvSafe(value) {
+  const str = String(value ?? '');
+  return /^[=+\-@]/.test(str) ? `'${str}` : str;
+}
+
 app.get('/api/admin/messages/export.csv', requireAuth, async (req, res) => {
   try {
     const list = await messages.listMessages();
@@ -130,11 +160,11 @@ app.get('/api/admin/messages/export.csv', requireAuth, async (req, res) => {
       ...list.map((m) => [
         m.id,
         m.status,
-        (m.text || '').replace(/\r?\n/g, ' ').replace(/"/g, '""'),
+        csvSafe((m.text || '').replace(/\r?\n/g, ' ').replace(/"/g, '""')),
         m.image_base64 ? 'sim' : 'não',
         m.scheduled_for || '',
         m.sent_at || '',
-        (m.error || '').replace(/"/g, '""'),
+        csvSafe((m.error || '').replace(/"/g, '""')),
         m.created_at,
       ]),
     ];
@@ -187,6 +217,7 @@ app.put('/api/admin/messages/:id', requireAuth, upload.single('image'), async (r
     const message = await messages.updateMessage(req.params.id, {
       text: req.body.text,
       image,
+      status: req.body.status,
       scheduledFor: req.body.scheduledFor || null,
     });
     res.json({ message });
@@ -265,6 +296,13 @@ function withTimeout(promise, ms, label) {
     new Promise((_, reject) => setTimeout(() => reject(new Error(`${label}: timeout após ${ms}ms`)), ms)),
   ]);
 }
+
+// Erros do multer (fileFilter rejeitando tipo, limite de tamanho excedido)
+// chegam aqui via next(err) — sem isso, o handler HTML padrão do Express
+// responderia com uma página de erro em vez de JSON.
+app.use((err, req, res, next) => {
+  res.status(400).json({ error: err.message });
+});
 
 if (process.env.DATABASE_URL) {
   Promise.all([ensureLeadsSchema(), adminUsers.ensureSchema(), messages.ensureSchema()])
