@@ -1,4 +1,4 @@
-const { BaseScraper } = require('./base');
+const { BaseScraper, createStealthPage } = require('./base');
 const { normalizeFlight } = require('../normalize');
 
 /**
@@ -91,7 +91,7 @@ class TudoAzulScraper extends BaseScraper {
   }
 
   async search(browser, { origin, destination, date }) {
-    const page = await browser.newPage();
+    const page = await createStealthPage(browser);
     const flights = [];
 
     try {

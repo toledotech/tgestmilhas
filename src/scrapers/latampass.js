@@ -1,4 +1,4 @@
-const { BaseScraper } = require('./base');
+const { BaseScraper, createStealthPage } = require('./base');
 const { normalizeFlight } = require('../normalize');
 
 const PT_MONTHS = [
@@ -79,7 +79,7 @@ class LatamPassScraper extends BaseScraper {
   }
 
   async search(browser, { origin, destination, date }) {
-    const page = await browser.newPage();
+    const page = await createStealthPage(browser);
     const flights = [];
 
     try {

@@ -1,4 +1,4 @@
-const { BaseScraper } = require('./base');
+const { BaseScraper, createStealthPage } = require('./base');
 const { normalizeFlight } = require('../normalize');
 
 /**
@@ -54,14 +54,22 @@ async function selectAutocomplete(page, field, query, attempts = 3) {
     await field.evaluate((el) => { el.value = ''; });
     await page.keyboard.type(query, { delay: 120 });
 
+    if (process.env.SCRAPER_DEBUG) {
+      const val = await field.inputValue().catch((e) => 'ERRO: ' + e.message);
+      const active = await page.evaluate(() => document.activeElement && document.activeElement.id).catch(() => null);
+      console.log(`[debug] tentativa ${i}: após digitar, campo="${val}", activeElement.id="${active}"`);
+    }
+
     const suggestion = page.locator('button').filter({ hasText: new RegExp(query, 'i') }).first();
     const appeared = await suggestion.isVisible({ timeout: 4000 + i * 2000 }).catch(() => false);
+    if (process.env.SCRAPER_DEBUG) console.log(`[debug] tentativa ${i}: sugestão apareceu = ${appeared}`);
 
     if (appeared) {
       await suggestion.evaluate((el) => el.click());
       await page.waitForTimeout(300);
 
       const value = await field.inputValue().catch(() => '');
+      if (process.env.SCRAPER_DEBUG) console.log(`[debug] tentativa ${i}: valor do campo após clique = "${value}"`);
       if (value && value.toUpperCase().includes(query.toUpperCase())) {
         return;
       }
@@ -108,7 +116,7 @@ class SmilesScraper extends BaseScraper {
   }
 
   async search(browser, { origin, destination, date }) {
-    const page = await browser.newPage();
+    const page = await createStealthPage(browser);
     const flights = [];
 
     try {
@@ -130,6 +138,16 @@ class SmilesScraper extends BaseScraper {
       // passos seguintes. Por isso clicamos via JS (sem mover o mouse) em
       // todos os elementos deste fluxo.
       await page.getByRole('button', { name: /buscador smiles/i }).evaluate((el) => el.click());
+
+      // A Smiles mudou o layout: agora existe uma caixa de busca colapsada
+      // (input readonly #HomeMobileFlightSearch-open-modal, placeholder
+      // "Buscar voos") embutida na página que precisa ser clicada pra
+      // expandir os campos de Origem/Destino — antes eles já apareciam
+      // direto após abrir o "Buscador Smiles" do header. Confirmado ao vivo.
+      const searchBoxTrigger = page.locator('#HomeMobileFlightSearch-open-modal');
+      if (await searchBoxTrigger.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await searchBoxTrigger.evaluate((el) => el.click());
+      }
 
       // Confirmado em teste ao vivo: os campos de origem/destino têm
       // placeholder "Origem"/"Destino" e mostram uma lista de sugestões (via

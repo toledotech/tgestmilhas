@@ -92,59 +92,48 @@ Evolution API e importar o workflow pronto em `n8n/workflow.json`.
 
 ## Status dos scrapers
 
-Sites de milhas são SPAs com proteção anti-bot e mudam layout com frequência
-— os seletores em `src/scrapers/*.js` foram validados manualmente contra os
-sites reais, mas quebram sem aviso. Antes de confiar em produção:
+**Causa raiz identificada** (depois de várias rodadas de investigação): os
+três sites sempre funcionavam em teste manual (navegador comum) e sempre
+falhavam rodando via Playwright — o padrão consistente era o autocomplete de
+origem/destino nunca retornar sugestões quando controlado por automação.
+Confirmado ao vivo na Smiles: `navigator.webdriver` é `false` num navegador
+normal e `true` por padrão no Chromium controlado pelo Playwright — o site
+provavelmente usa isso (ou fingerprinting mais sofisticado) para silenciar
+respostas de autocomplete de sessões automatizadas, sem bloquear a página em
+si (por isso a digitação sempre "funcionava", mas a sugestão nunca aparecia).
 
-- **Smiles**: em progresso, ainda não fecha ponta a ponta de forma confiável.
-  Validado ao vivo e funcionando: fechamento do popup promocional, abertura
-  do buscador, digitação real disparando o autocomplete. Identificamos (e
-  corrigimos) uma causa raiz real: o **movimento do mouse do Playwright**
-  passando sobre o header dispara submenus de navegação por hover que
-  sobrepõem o buscador — a correção foi trocar todos os cliques desse fluxo
-  por `elemento.evaluate(el => el.click())` (clique via JS, sem mover o
-  cursor), o que eliminou a interceptação em testes manuais isolados.
-  Porém, ao rodar a MESMA função através da classe `SmilesScraper` (não como
-  script solto), a seleção do autocomplete voltou a falhar de forma
-  consistente (3/3 execuções), enquanto um script standalone com a lógica
-  idêntica funcionou. Não identifiquei ainda por que o comportamento difere
-  entre os dois — hipótese mais provável é rate limiting/anti-bot da própria
-  Smiles depois de muitas requisições automatizadas seguidas vindas do mesmo
-  IP/sessão durante os testes de hoje (não é algo que o código controla).
-  `selectDate` (navegação de mês no calendário) e a extração dos cards de
-  resultado (`[data-testid="flight-card"]`) ainda não foram exercitados de
-  ponta a ponta porque o fluxo trava antes de chegar neles. Próximo passo:
-  testar novamente depois de um tempo (para descartar rate limiting) e, se
-  persistir, comparar passo a passo a execução via classe vs. script solto
-  com logging extra.
-- **LATAM Pass**: validado ao vivo até a seleção de origem, destino, data de
-  ida e data de volta no widget (tudo funcionando via clique JS sem mover o
-  mouse). Confirmado também que a URL direta com `?origin=&destination=...`
-  **não funciona** para busca com milhas — `redemption=true` redireciona
-  para login, então o scraper precisa interagir com o widget mesmo. O que
-  falta: o botão de submit final não confirma a busca via clique JS (o
-  aria-label continua "Sem campos preenchidos" mesmo com tudo selecionado),
-  possivelmente porque o framework exige um evento de clique "confiável"
-  (`isTrusted`) nesse ponto específico — ao contrário da Smiles, onde era o
-  oposto (mouse real atrapalhava). Precisa de mais uma rodada de teste ao
-  vivo combinando as duas abordagens.
-- **TudoAzul**: a que chegou mais longe das três. Validado ao vivo ponta a
-  ponta manualmente: popup de cookies, autocomplete de origem/destino (usa
-  `role="option"` limpo, mais fácil que Smiles/LATAM), calendário via
-  `data-date="AAAA-MM-DD"` nos botões de dia (também mais simples — sem
-  precisar de aria-label com nome de mês por extenso), e o clique em "Buscar
-  passagens" **navegou de verdade** para a página de resultados com
-  origin/destination/data corretos na URL — nenhuma das outras duas chegou
-  nesse ponto. A página de resultados carregada no teste manual não mostrou
-  nenhum card de voo, mas mesmo depois de codificar a mesma lógica em
-  `TudoAzulScraper`, o autocomplete de origem já falha antes de chegar lá
-  ("campo Origem não encontrado") — mesmo padrão dos outros dois: funciona
-  no teste manual ao vivo, mas falha ao rodar via classe/script. Ainda não
-  investigado a fundo (suspeita segue sendo timing/rate-limiting, não lógica
-  errada).
+Mitigação aplicada em `src/scrapers/base.js` (`createStealthPage`) +
+`playwright-extra` com `puppeteer-extra-plugin-stealth` no lançamento do
+browser (`src/server.js`) — mascara `navigator.webdriver`, plugins,
+languages e outros sinais comuns de detecção. **Testado ao vivo e não foi
+suficiente pra Smiles nem TudoAzul** — o autocomplete continua não
+retornando sugestões mesmo com essa camada, o que sugere uma proteção mais
+robusta (tipo Akamai/DataDome/PerimeterX), não só a checagem simples de
+`navigator.webdriver`. Contornar esse tipo de proteção de forma confiável
+normalmente exige investimento adicional significativo (proxies
+residenciais, browsers "undetectable" como patchright, rotação de
+fingerprint) — pode não valer a pena para o volume desse projeto.
 
-Para depurar, rode com o navegador visível:
+**Recomendação**: dado esse teto de investigação, a rota de scraping direto
+tem retorno decrescente a partir daqui. Vale reconsiderar as APIs pagas
+mencionadas na fase de planejamento (ex: apidevoos.dev, BuscaMilhas) como
+caminho mais rápido para ter a busca funcionando de verdade — ver histórico
+de decisão no início do projeto.
+
+- **Smiles**: autocomplete nunca retorna sugestões via Playwright (mesmo com
+  stealth). Fluxo de UI (popup, expandir buscador, abrir calendário) está
+  todo mapeado e correto em `src/scrapers/smiles.js` — só falta essa camada
+  de detecção ser contornada, se optarem por continuar tentando.
+- **LATAM Pass**: chega a preencher origem/destino/datas, mas o botão de
+  submit final não confirma a busca via clique programático (framework
+  parece exigir um evento "confiável"). Não testado ainda com o stealth
+  plugin — pode valer revalidar antes de descartar.
+- **TudoAzul**: mesmo padrão da Smiles — autocomplete não retorna sugestão
+  via Playwright, mesmo com stealth. É a que tinha chegado mais longe
+  (chegou a navegar pra página de resultados em teste manual).
+
+Para depurar, rode com o navegador visível e logging extra:
 
 ```bash
-PLAYWRIGHT_HEADLESS=false npm run dev
+PLAYWRIGHT_HEADLESS=false SCRAPER_DEBUG=1 npm run dev
 ```

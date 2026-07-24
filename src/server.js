@@ -5,7 +5,12 @@ const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const multer = require('multer');
 const rateLimit = require('express-rate-limit');
-const { chromium } = require('playwright');
+// playwright-extra + stealth: sites de milhas usam fingerprinting pra
+// silenciar respostas de autocomplete quando detectam automação (confirmado
+// ao vivo na Smiles — navigator.webdriver sozinho não era suficiente).
+const { chromium } = require('playwright-extra');
+const stealthPlugin = require('puppeteer-extra-plugin-stealth');
+chromium.use(stealthPlugin());
 
 const { pool } = require('./db');
 const { SmilesScraper } = require('./scrapers/smiles');
