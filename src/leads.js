@@ -4,6 +4,7 @@ const VALID_PROFILES = new Set([
   'quase_nunca',
   'nacional_1_2',
   'internacional_1_2',
+  'nacional_e_internacional_1_1',
   'frequente_4mais',
 ]);
 
