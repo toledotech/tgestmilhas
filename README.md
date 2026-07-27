@@ -90,50 +90,40 @@ Resposta:
 Ver [docs/n8n-setup.md](docs/n8n-setup.md) — cobre subir o container, a
 Evolution API e importar o workflow pronto em `n8n/workflow.json`.
 
-## Status dos scrapers
+## Status da busca (Smiles / LATAM Pass / TudoAzul)
 
-**Causa raiz identificada** (depois de várias rodadas de investigação): os
-três sites sempre funcionavam em teste manual (navegador comum) e sempre
-falhavam rodando via Playwright — o padrão consistente era o autocomplete de
-origem/destino nunca retornar sugestões quando controlado por automação.
-Confirmado ao vivo na Smiles: `navigator.webdriver` é `false` num navegador
-normal e `true` por padrão no Chromium controlado pelo Playwright — o site
-provavelmente usa isso (ou fingerprinting mais sofisticado) para silenciar
-respostas de autocomplete de sessões automatizadas, sem bloquear a página em
-si (por isso a digitação sempre "funcionava", mas a sugestão nunca aparecia).
+Depois de investir bastante em scraping direto (Playwright) e esbarrar em
+bot-detection avançado (tipo Akamai/DataDome — ver histórico de commits pra
+detalhes), migramos Smiles e TudoAzul pra **API da seats.aero**
+(`src/seatsAero.js` + `src/scrapers/seatsAeroScraper.js`), que já entrega
+esses dados sem precisar brigar com o site. Configure `SEATS_AERO_API_KEY`
+no `.env` — sem ela, `/search?program=smiles` e `program=tudoazul` retornam
+erro controlado (`SEATS_AERO_API_KEY não configurada`).
 
-Mitigação aplicada em `src/scrapers/base.js` (`createStealthPage`) +
-`playwright-extra` com `puppeteer-extra-plugin-stealth` no lançamento do
-browser (`src/server.js`) — mascara `navigator.webdriver`, plugins,
-languages e outros sinais comuns de detecção. **Testado ao vivo e não foi
-suficiente pra Smiles nem TudoAzul** — o autocomplete continua não
-retornando sugestões mesmo com essa camada, o que sugere uma proteção mais
-robusta (tipo Akamai/DataDome/PerimeterX), não só a checagem simples de
-`navigator.webdriver`. Contornar esse tipo de proteção de forma confiável
-normalmente exige investimento adicional significativo (proxies
-residenciais, browsers "undetectable" como patchright, rotação de
-fingerprint) — pode não valer a pena para o volume desse projeto.
+- **Smiles** e **TudoAzul**: via seats.aero (`source: smiles` e `source:
+  azul`). Cliente escrito e pronto (`src/seatsAero.js`), mas **ainda não
+  testado contra a API real** — não tínhamos a chave no momento em que foi
+  implementado. A forma dos campos (`Trips`, `YMileageCost` etc.) segue
+  exatamente a documentação oficial
+  ([Concepts](https://developers.seats.aero/reference/concepts-copy),
+  [Cached Search](https://developers.seats.aero/reference/cached-search)) —
+  validar assim que a chave estiver configurada.
+- **LATAM Pass**: **não é suportado pela seats.aero** (confirmado na lista
+  oficial de sources da documentação). Continua via scraper Playwright em
+  `src/scrapers/latampass.js`, que preenche origem/destino/data mas ainda
+  não confirma o botão de submit final via clique programático — não
+  revalidado com o stealth plugin ainda.
+- Acesso à API da seats.aero exige aprovação comercial pra esse caso de uso
+  (não é liberado no self-serve do plano Pro) — pedido em andamento, ver
+  [docs/seats-aero-email-draft.md](docs/seats-aero-email-draft.md).
 
-**Recomendação**: dado esse teto de investigação, a rota de scraping direto
-tem retorno decrescente a partir daqui. Vale reconsiderar as APIs pagas
-mencionadas na fase de planejamento (ex: apidevoos.dev, BuscaMilhas) como
-caminho mais rápido para ter a busca funcionando de verdade — ver histórico
-de decisão no início do projeto.
+Os scrapers antigos de Smiles/TudoAzul via Playwright (`src/scrapers/
+smiles.js`, `src/scrapers/tudoazul.js`) foram mantidos no repositório como
+referência da investigação de bot-detection, mas não são mais usados em
+produção (`server.js` não os importa mais).
 
-- **Smiles**: autocomplete nunca retorna sugestões via Playwright (mesmo com
-  stealth). Fluxo de UI (popup, expandir buscador, abrir calendário) está
-  todo mapeado e correto em `src/scrapers/smiles.js` — só falta essa camada
-  de detecção ser contornada, se optarem por continuar tentando.
-- **LATAM Pass**: chega a preencher origem/destino/datas, mas o botão de
-  submit final não confirma a busca via clique programático (framework
-  parece exigir um evento "confiável"). Não testado ainda com o stealth
-  plugin — pode valer revalidar antes de descartar.
-- **TudoAzul**: mesmo padrão da Smiles — autocomplete não retorna sugestão
-  via Playwright, mesmo com stealth. É a que tinha chegado mais longe
-  (chegou a navegar pra página de resultados em teste manual).
-
-Para depurar, rode com o navegador visível e logging extra:
+Para depurar o scraper da LATAM Pass, rode com o navegador visível:
 
 ```bash
-PLAYWRIGHT_HEADLESS=false SCRAPER_DEBUG=1 npm run dev
+PLAYWRIGHT_HEADLESS=false npm run dev
 ```

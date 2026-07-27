@@ -13,9 +13,8 @@ const stealthPlugin = require('puppeteer-extra-plugin-stealth');
 chromium.use(stealthPlugin());
 
 const { pool } = require('./db');
-const { SmilesScraper } = require('./scrapers/smiles');
 const { LatamPassScraper } = require('./scrapers/latampass');
-const { TudoAzulScraper } = require('./scrapers/tudoazul');
+const { SeatsAeroScraper } = require('./scrapers/seatsAeroScraper');
 const { saveLead, getAllLeads, ensureSchema: ensureLeadsSchema } = require('./leads');
 const adminUsers = require('./adminUsers');
 const messages = require('./messages');
@@ -26,10 +25,12 @@ const HEADLESS = process.env.PLAYWRIGHT_HEADLESS !== 'false';
 const SCRAPE_TIMEOUT_MS = Number(process.env.SCRAPE_TIMEOUT_MS || 45000);
 const FREE_GROUP_URL = process.env.FREE_GROUP_URL || 'https://chat.whatsapp.com/SEU_LINK_AQUI';
 
+// Smiles e TudoAzul via API da seats.aero (LATAM Pass não é suportado por
+// ela — segue via scraper Playwright, ver src/scrapers/latampass.js).
 const scrapers = {
-  smiles: new SmilesScraper(),
+  smiles: new SeatsAeroScraper('smiles', 'smiles'),
   latampass: new LatamPassScraper(),
-  tudoazul: new TudoAzulScraper(),
+  tudoazul: new SeatsAeroScraper('tudoazul', 'azul'),
 };
 
 const upload = multer({
@@ -302,7 +303,11 @@ app.get('/search', async (req, res) => {
     return res.status(400).json({ error: `programa(s) desconhecido(s): ${unknown.join(', ')}` });
   }
 
-  const browser = await chromium.launch({ headless: HEADLESS });
+  // Só a LATAM Pass ainda precisa de navegador (Smiles/TudoAzul usam a API
+  // da seats.aero, que ignora o parâmetro browser).
+  const browser = requestedPrograms.includes('latampass')
+    ? await chromium.launch({ headless: HEADLESS })
+    : null;
 
   try {
     const results = await Promise.allSettled(
@@ -325,7 +330,7 @@ app.get('/search', async (req, res) => {
 
     res.json({ flights, errors });
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
 });
 
