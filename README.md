@@ -90,36 +90,40 @@ Resposta:
 Ver [docs/n8n-setup.md](docs/n8n-setup.md) — cobre subir o container, a
 Evolution API e importar o workflow pronto em `n8n/workflow.json`.
 
-## Status da busca (Smiles / LATAM Pass / TudoAzul)
+## Status da busca (Smiles / LATAM Pass / TudoAzul) — PAUSADO
 
-Depois de investir bastante em scraping direto (Playwright) e esbarrar em
-bot-detection avançado (tipo Akamai/DataDome — ver histórico de commits pra
-detalhes), migramos Smiles e TudoAzul pra **API da seats.aero**
-(`src/seatsAero.js` + `src/scrapers/seatsAeroScraper.js`), que já entrega
-esses dados sem precisar brigar com o site. Configure `SEATS_AERO_API_KEY`
-no `.env` — sem ela, `/search?program=smiles` e `program=tudoazul` retornam
-erro controlado (`SEATS_AERO_API_KEY não configurada`).
+**seats.aero recusou acesso à API por restrição regional dura**: "our API
+... is not available for use in Brazil ... This is a hard regional
+availability limitation rather than something we can adjust via a custom
+contract, written approval, or one-off exception." Não é questão de preço
+ou negociação — está fechado até (e se) eles mudarem essa política pro
+Brasil. Pedido original em
+[docs/seats-aero-email-draft.md](docs/seats-aero-email-draft.md).
 
-- **Smiles** e **TudoAzul**: via seats.aero (`source: smiles` e `source:
-  azul`). Cliente escrito e pronto (`src/seatsAero.js`), mas **ainda não
-  testado contra a API real** — não tínhamos a chave no momento em que foi
-  implementado. A forma dos campos (`Trips`, `YMileageCost` etc.) segue
-  exatamente a documentação oficial
-  ([Concepts](https://developers.seats.aero/reference/concepts-copy),
-  [Cached Search](https://developers.seats.aero/reference/cached-search)) —
-  validar assim que a chave estiver configurada.
-- **LATAM Pass**: **não é suportado pela seats.aero** (confirmado na lista
-  oficial de sources da documentação). Continua via scraper Playwright em
-  `src/scrapers/latampass.js`, que preenche origem/destino/data mas ainda
-  não confirma o botão de submit final via clique programático — não
-  revalidado com o stealth plugin ainda.
-- Acesso à API da seats.aero exige aprovação comercial pra esse caso de uso
-  (não é liberado no self-serve do plano Pro) — pedido em andamento, ver
-  [docs/seats-aero-email-draft.md](docs/seats-aero-email-draft.md).
+Por decisão do usuário, a busca automatizada está **pausada** por enquanto
+(não é prioridade no momento — retomar quando fizer sentido). Estado atual
+do código, pra quem for continuar depois:
+
+- **`src/seatsAero.js`** + **`src/scrapers/seatsAeroScraper.js`**: cliente
+  pronto pra Cached Search API (Smiles + TudoAzul), mas **nunca testado
+  contra a API real** (nunca tivemos uma chave que funcionasse) e agora sem
+  perspectiva de uso a menos que a seats.aero mude a política regional.
+  `/search?program=smiles` e `program=tudoazul` seguem no ar, mas retornam
+  erro controlado (`SEATS_AERO_API_KEY não configurada`) — não quebra nada,
+  só não busca.
+- **LATAM Pass**: nunca migrou pra seats.aero (não é um source suportado
+  por lá de qualquer forma). Segue no scraper Playwright em
+  `src/scrapers/latampass.js`, que preenche origem/destino/data mas trava
+  no clique do botão de submit final — não revalidado com o stealth plugin.
+- Opções não exploradas ainda, se/quando isso for retomado: contato
+  comercial com a **Moblix** (brasileira, então sem essa restrição
+  regional, mas nunca conseguimos preço público) ou investir mais pesado em
+  scraping (proxy residencial, browser undetectable) contra o
+  bot-detection identificado na Smiles/TudoAzul.
 
 Os scrapers antigos de Smiles/TudoAzul via Playwright (`src/scrapers/
 smiles.js`, `src/scrapers/tudoazul.js`) foram mantidos no repositório como
-referência da investigação de bot-detection, mas não são mais usados em
+referência da investigação de bot-detection, mas não são usados em
 produção (`server.js` não os importa mais).
 
 Para depurar o scraper da LATAM Pass, rode com o navegador visível:
