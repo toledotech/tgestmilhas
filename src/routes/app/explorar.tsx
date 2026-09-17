@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { listExploreDestinationsFn } from "@/lib/explore.functions";
 
 type ExploreOffer = { program: string; miles: number; taxes: number };
@@ -37,17 +36,12 @@ const MONTH_LABEL = [
   "Dezembro",
 ];
 
-type ExploreDestination = NonNullable<
-  Awaited<ReturnType<typeof listExploreDestinationsFn>>["destinations"]
->[number];
-
 function ExplorarPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["explore-destinations"],
     queryFn: () => listExploreDestinationsFn(),
   });
 
-  const [selecionado, setSelecionado] = useState<ExploreDestination | null>(null);
   const [destino, setDestino] = useState("");
   const [programa, setPrograma] = useState("todos");
   const [tipo, setTipo] = useState("todos");
@@ -171,15 +165,11 @@ function ExplorarPage() {
           Nenhum destino bate com esses filtros.
         </Card>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtrados.map((d) => {
-            const offers = (d.offers as ExploreOffer[] | null) ?? [];
+            const offers = ((d.offers as ExploreOffer[] | null) ?? []).slice().sort((a, b) => a.miles - b.miles);
             return (
-              <Card
-                key={d.id}
-                className="cursor-pointer p-4 transition-shadow hover:shadow-md"
-                onClick={() => setSelecionado(d)}
-              >
+              <Card key={d.id} className="cursor-pointer p-4 transition-shadow hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-display font-bold text-foreground">{d.label}</p>
@@ -191,55 +181,31 @@ function ExplorarPage() {
                     {d.country === "Brasil" ? "Nacional" : "Internacional"}
                   </Badge>
                 </div>
-                <div className="mt-3">
-                  <p className="mono text-lg font-bold text-primary">
-                    {d.cheapest_miles.toLocaleString("pt-BR")} milhas
-                  </p>
-                  <p className="mono text-xs text-muted-foreground">
-                    + R$ {Number(d.cheapest_taxes).toFixed(2)} taxas
-                  </p>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {PROGRAM_LABEL[d.cheapest_program] ?? d.cheapest_program}
-                  {offers.length > 1 && ` · +${offers.length - 1} programa(s)`}
+
+                <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Melhor data — {new Date(d.sample_date).toLocaleDateString("pt-BR")}
                 </p>
+
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {offers.map((offer, i) => (
+                    <span
+                      key={offer.program}
+                      className={`mono inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ${
+                        i === 0
+                          ? "border-primary bg-primary/10 font-semibold text-primary"
+                          : "border-border text-foreground"
+                      }`}
+                    >
+                      {PROGRAM_LABEL[offer.program] ?? offer.program}
+                      <b>{offer.miles.toLocaleString("pt-BR")}</b>
+                    </span>
+                  ))}
+                </div>
               </Card>
             );
           })}
         </div>
       )}
-
-      <Dialog open={!!selecionado} onOpenChange={(open) => !open && setSelecionado(null)}>
-        <DialogContent>
-          {selecionado && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {selecionado.origin} → {selecionado.destination} · {selecionado.label}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2">
-                {((selecionado.offers as ExploreOffer[] | null) ?? []).map((offer, i) => (
-                  <div
-                    key={offer.program}
-                    className={`flex items-center justify-between rounded-md border px-3 py-2 ${
-                      i === 0 ? "border-primary bg-primary/10" : "border-border"
-                    }`}
-                  >
-                    <span className="text-sm font-medium text-foreground">
-                      {PROGRAM_LABEL[offer.program] ?? offer.program}
-                    </span>
-                    <span className="mono text-sm text-foreground">
-                      {offer.miles.toLocaleString("pt-BR")} milhas{" "}
-                      <span className="text-muted-foreground">+ R$ {offer.taxes.toFixed(2)}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
