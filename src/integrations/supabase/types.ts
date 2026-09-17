@@ -96,6 +96,58 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["miles_search_cache"]["Insert"]>;
         Relationships: [];
       };
+      explore_routes: {
+        Row: {
+          id: number;
+          origin: string;
+          destination: string;
+          label: string;
+          country: string;
+          active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          origin: string;
+          destination: string;
+          label: string;
+          country: string;
+          active?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["explore_routes"]["Insert"]>;
+        Relationships: [];
+      };
+      explore_results: {
+        Row: {
+          id: number;
+          route_id: number;
+          origin: string;
+          destination: string;
+          label: string;
+          country: string;
+          cheapest_miles: number;
+          cheapest_taxes: number;
+          cheapest_program: string;
+          sample_date: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          route_id: number;
+          origin: string;
+          destination: string;
+          label: string;
+          country: string;
+          cheapest_miles: number;
+          cheapest_taxes: number;
+          cheapest_program: string;
+          sample_date: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["explore_results"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
