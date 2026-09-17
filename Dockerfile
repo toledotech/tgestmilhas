@@ -1,7 +1,7 @@
-FROM oven/bun:1.3 AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
-COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile || bun install
+COPY package.json package-lock.json* ./
+RUN npm install --legacy-peer-deps
 COPY . .
 
 ARG VITE_SUPABASE_URL
@@ -10,7 +10,7 @@ ARG VITE_SUPABASE_ANON_KEY
 RUN echo "VITE_SUPABASE_URL=${VITE_SUPABASE_URL}" >> .env.production && \
     echo "VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}" >> .env.production
 
-RUN bun run build
+RUN npm run build
 
 FROM oven/bun:1.3-slim AS runner
 WORKDIR /app
