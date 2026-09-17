@@ -16,7 +16,7 @@ export function AppShell({ email, children }: { email?: string | null; children:
 
   return (
     <SidebarProvider>
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen w-full flex-col bg-background">
       <AppTopbar
         title={brand.name}
         user={email ? { name: email.split("@")[0], email } : undefined}
