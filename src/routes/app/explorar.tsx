@@ -211,14 +211,11 @@ function ExplorarPage() {
                     return (
                       <span
                         key={offer.program}
-                        className={`mono inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${
-                          i === 0 ? "ring-1 ring-offset-1 ring-offset-card" : ""
-                        }`}
+                        className="mono inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
                         style={{
-                          borderColor: color,
-                          backgroundColor: hexToRgba(color, 0.1),
+                          border: `${i === 0 ? 2 : 1}px solid ${color}`,
+                          backgroundColor: hexToRgba(color, i === 0 ? 0.16 : 0.1),
                           color,
-                          ...(i === 0 ? ({ "--tw-ring-color": color } as React.CSSProperties) : {}),
                         }}
                       >
                         {PROGRAM_LABEL[offer.program] ?? offer.program}
