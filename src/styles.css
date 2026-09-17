@@ -3,8 +3,6 @@
 @source "../node_modules/@toledotech/tgest-ui/dist";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark, .dark *));
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -31,78 +29,98 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
 
 /* ============================================================
-   THEME — ToledoTech Design System v2.0 · Digital Futurista (Dark)
-   Mesmo token set usado no TGestCRM/TGestEvent — mantém o admin
-   visualmente consistente com o resto do ecossistema.
+   THEME — ToledoTech Design System v3.1.0 · Claro Moderno
+   Fundo creme, sidebar/header navy full-width, acento teal.
+   Fonte: design_system.md do ecossistema ToledoTech.
    ============================================================ */
 :root {
-  color-scheme: dark;
-  --radius: 0.75rem;
+  color-scheme: light;
+  --radius: 1rem;
 
-  --darkBg: #0f1623;
-  --surface: #1a2540;
-  --hairline: #263350;
+  --pageBg: #fdf8f1;
+  --surface: #ffffff;
+  --borderC: #efe4d3;
 
-  --textPrimary: #cbd5e1;
-  --textMuted: #64748b;
+  --textPrimary: #1e2a3b;
+  --textMuted: #94a0b4;
 
-  --neonGreen: #34d399;
-  --glow-green: 0 0 15px rgba(52, 211, 153, 0.12);
+  --navy: #0b132b;
+  --navyHover: #17213f;
 
-  --selectBlue: #1e2e48;
-  --selectBlueBorder: #2e4570;
-  --selectBlueText: #7eb3f5;
+  --teal: #14b8a6;
+  --tealSoft: rgba(20, 184, 166, 0.12);
 
-  --errorRed: #f87171;
-  --errorBg: rgba(248, 113, 113, 0.08);
-  --errorBorder: rgba(248, 113, 113, 0.25);
-  --warnAmber: #fbbf24;
-  --warnBg: rgba(251, 191, 36, 0.08);
-  --warnBorder: rgba(251, 191, 36, 0.25);
-  --infoBlue: #60a5fa;
-  --infoBg: rgba(96, 165, 250, 0.08);
-  --infoBorder: rgba(96, 165, 250, 0.25);
+  --orange: #f59e0b;
+  --orangeSoft: rgba(245, 158, 11, 0.14);
 
-  --background: #0d1117;
+  --selectBg: rgba(20, 184, 166, 0.12);
+  --selectBorder: rgba(20, 184, 166, 0.35);
+  --selectText: #0d9488;
+
+  --green: #10b981;
+  --greenBg: rgba(16, 185, 129, 0.1);
+  --greenBorder: rgba(16, 185, 129, 0.25);
+
+  --red: #ef4444;
+  --redBg: rgba(239, 68, 68, 0.1);
+  --redBorder: rgba(239, 68, 68, 0.25);
+
+  --amber: #f59e0b;
+  --amberBg: rgba(245, 158, 11, 0.12);
+  --amberBorder: rgba(245, 158, 11, 0.3);
+
+  --blue: #3b82f6;
+  --blueBg: rgba(59, 130, 246, 0.1);
+  --blueBorder: rgba(59, 130, 246, 0.25);
+
+  --background: var(--pageBg);
   --foreground: var(--textPrimary);
   --card: var(--surface);
   --card-foreground: var(--textPrimary);
   --popover: var(--surface);
   --popover-foreground: var(--textPrimary);
 
-  --primary: var(--neonGreen);
-  --primary-foreground: #0a1f14;
+  --primary: var(--teal);
+  --primary-foreground: #06231a;
   --secondary: var(--surface);
   --secondary-foreground: var(--textPrimary);
-  --muted: var(--surface);
+  --muted: #f1e9da;
   --muted-foreground: var(--textMuted);
-  --accent: var(--selectBlue);
-  --accent-foreground: var(--selectBlueText);
-  --destructive: var(--errorRed);
+  --accent: var(--selectBg);
+  --accent-foreground: var(--selectText);
+  --destructive: var(--red);
   --destructive-foreground: #ffffff;
-  --border: var(--hairline);
-  --input: var(--hairline);
-  --ring: var(--selectBlueBorder);
+  --border: var(--borderC);
+  --input: var(--borderC);
+  --ring: var(--selectBorder);
 
-  --sidebar: var(--surface);
-  --sidebar-foreground: var(--textPrimary);
-  --sidebar-primary: var(--neonGreen);
-  --sidebar-primary-foreground: #0a1f14;
-  --sidebar-accent: var(--selectBlue);
-  --sidebar-accent-foreground: var(--selectBlueText);
-  --sidebar-border: var(--hairline);
-  --sidebar-ring: var(--selectBlueBorder);
+  --sidebar: var(--navy);
+  --sidebar-foreground: #a9b4c7;
+  --sidebar-primary: var(--teal);
+  --sidebar-primary-foreground: #06231a;
+  --sidebar-accent: rgba(20, 184, 166, 0.14);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: var(--navyHover);
+  --sidebar-ring: var(--teal);
 }
 
 html,
 body {
-  background: #0d1117;
+  background: var(--pageBg);
   color: var(--foreground);
   font-family: var(--font-sans);
   font-size: 16px;
@@ -117,17 +135,22 @@ h3,
   font-family: var(--font-display);
   letter-spacing: -0.01em;
 }
-h1 {
+/* Escopado em `main` pra não sobrescrever o <h1> do AppTopbar (header
+   global, texto claro sobre navy) com a cor de título de página. */
+main h1 {
   font-size: 26px;
   font-weight: 800;
+  color: var(--textPrimary);
 }
-h2 {
+main h2 {
   font-size: 20px;
   font-weight: 700;
+  color: var(--textPrimary);
 }
-h3 {
+main h3 {
   font-size: 17px;
   font-weight: 600;
+  color: var(--textPrimary);
 }
 label,
 .label {
@@ -146,10 +169,11 @@ label,
 td.mono,
 [data-mono] {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 tr:hover td {
-  background: var(--selectBlue);
+  background: var(--pageBg);
 }
 tr .row-actions {
   opacity: 0;
@@ -160,7 +184,8 @@ tr:hover .row-actions {
 }
 
 .active-blue {
-  background: var(--selectBlue);
-  border-left: 2px solid var(--selectBlueBorder);
-  color: var(--selectBlueText);
+  background: var(--sidebar-accent);
+  border-left: 3px solid var(--teal);
+  color: #ffffff;
+  font-weight: 600;
 }
