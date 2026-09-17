@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { listExploreDestinationsFn } from "@/lib/explore.functions";
 import { PriceCalendarDialog, type PriceCalendarTarget } from "@/components/price-calendar-dialog";
 import { PROGRAM_LABEL, PROGRAM_COLOR, DEFAULT_PROGRAM_COLOR, hexToRgba } from "@/lib/program-colors";
@@ -22,32 +23,48 @@ function MinhasMilhasPage() {
     queryFn: () => listExploreDestinationsFn(),
   });
 
+  // Campos do formulário (o que o usuário está digitando/selecionando) —
+  // separados do que realmente filtra a lista, que só atualiza ao clicar
+  // em "Filtrar". Evita recalcular a cada tecla digitada.
   const [milhas, setMilhas] = useState("");
   const [programa, setPrograma] = useState("todos");
   const [tipo, setTipo] = useState("todos");
+
+  const [aplicado, setAplicado] = useState<{ milhas: number; programa: string; tipo: string } | null>(null);
   const [calendarTarget, setCalendarTarget] = useState<PriceCalendarTarget | null>(null);
 
-  const milhasNum = Number(milhas.replace(/\D/g, "")) || 0;
   const destinations = data?.destinations ?? [];
 
+  function filtrar() {
+    const milhasNum = Number(milhas.replace(/\D/g, "")) || 0;
+    setAplicado({ milhas: milhasNum, programa, tipo });
+  }
+
+  function limpar() {
+    setMilhas("");
+    setPrograma("todos");
+    setTipo("todos");
+    setAplicado(null);
+  }
+
   const resultado = useMemo(() => {
-    if (milhasNum <= 0) return [];
+    if (!aplicado || aplicado.milhas <= 0) return [];
 
     return destinations
       .map((d) => {
         const offers = ((d.offers as ExploreOffer[] | null) ?? [])
-          .filter((o) => o.miles <= milhasNum && (programa === "todos" || o.program === programa))
+          .filter((o) => o.miles <= aplicado.milhas && (aplicado.programa === "todos" || o.program === aplicado.programa))
           .sort((a, b) => a.miles - b.miles);
         return { destino: d, offers };
       })
       .filter(({ destino, offers }) => {
         if (offers.length === 0) return false;
-        if (tipo === "nacional" && destino.country !== "Brasil") return false;
-        if (tipo === "internacional" && destino.country === "Brasil") return false;
+        if (aplicado.tipo === "nacional" && destino.country !== "Brasil") return false;
+        if (aplicado.tipo === "internacional" && destino.country === "Brasil") return false;
         return true;
       })
       .sort((a, b) => a.offers[0].miles - b.offers[0].miles);
-  }, [destinations, milhasNum, programa, tipo]);
+  }, [destinations, aplicado]);
 
   return (
     <div className="space-y-6">
@@ -71,6 +88,7 @@ function MinhasMilhasPage() {
                 placeholder="Ex: 300000"
                 value={milhas}
                 onChange={(e) => setMilhas(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && filtrar()}
                 inputMode="numeric"
               />
             </div>
@@ -103,30 +121,38 @@ function MinhasMilhasPage() {
             </select>
           </div>
         </div>
+        <div className="mt-4 flex gap-2">
+          <Button onClick={filtrar} disabled={!milhas.trim()}>
+            Filtrar
+          </Button>
+          <Button variant="ghost" onClick={limpar}>
+            Limpar
+          </Button>
+        </div>
       </Card>
 
-      {milhasNum <= 0 ? (
+      {!aplicado ? (
         <Card className="p-8 text-center">
           <Wallet className="mx-auto size-8 text-muted-foreground" />
           <p className="mt-3 text-sm text-muted-foreground">
-            Digite quantas milhas você tem acima pra ver as opções de viagem.
+            Digite quantas milhas você tem e clique em "Filtrar" pra ver as opções de viagem.
           </p>
         </Card>
       ) : isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando…</p>
       ) : resultado.length === 0 ? (
         <Card className="p-8 text-center text-sm text-muted-foreground">
-          Com {milhasNum.toLocaleString("pt-BR")} milhas, nenhum destino da nossa lista cabe ainda — tenta
-          aumentar o valor ou trocar o filtro de programa/tipo.
+          Com {aplicado.milhas.toLocaleString("pt-BR")} milhas, nenhum destino da nossa lista cabe ainda —
+          tenta aumentar o valor ou trocar o filtro de programa/tipo.
         </Card>
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            {resultado.length} destino(s) possíveis com {milhasNum.toLocaleString("pt-BR")} milhas
+            {resultado.length} destino(s) possíveis com {aplicado.milhas.toLocaleString("pt-BR")} milhas
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {resultado.map(({ destino: d, offers }) => {
-              const sobra = milhasNum - offers[0].miles;
+              const sobra = aplicado.milhas - offers[0].miles;
               return (
                 <Card key={d.id} className="p-4">
                   <div className="flex items-start justify-between gap-2">
