@@ -70,6 +70,32 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["admin_users"]["Insert"]>;
         Relationships: [];
       };
+      miles_search_cache: {
+        Row: {
+          id: number;
+          cache_key: string;
+          origin: string;
+          destination: string;
+          date: string;
+          program: string;
+          results: Json;
+          expires_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          cache_key: string;
+          origin: string;
+          destination: string;
+          date: string;
+          program: string;
+          results: Json;
+          expires_at: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["miles_search_cache"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
