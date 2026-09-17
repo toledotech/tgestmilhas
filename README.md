@@ -1,8 +1,5 @@
 # TGestMilhas — Alerta de Milhas
 
-<!-- teste de auto deploy: 2026-09-17 09:02 -->
-
-
 Landing page de captura de leads + painel admin, na mesma stack dos outros
 produtos ToledoTech: **Vite + TanStack Start (React 19) + TanStack Router/Query
 + Supabase (Auth + Postgres) + Tailwind 4 + `@toledotech/tgest-ui`**.
