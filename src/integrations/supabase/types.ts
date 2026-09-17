@@ -129,6 +129,7 @@ export type Database = {
           cheapest_miles: number;
           cheapest_taxes: number;
           cheapest_program: string;
+          offers: Json;
           sample_date: string;
           updated_at: string;
         };
@@ -142,6 +143,7 @@ export type Database = {
           cheapest_miles: number;
           cheapest_taxes: number;
           cheapest_program: string;
+          offers?: Json;
           sample_date: string;
           updated_at?: string;
         };

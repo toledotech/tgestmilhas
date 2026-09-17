@@ -38,7 +38,18 @@ export async function refreshExploreDestinations() {
       });
       if (flights.length === 0) continue;
 
-      const cheapest = flights.reduce((min, f) => (f.miles < min.miles ? f : min), flights[0]);
+      // Menor preço por programa (não só o menor geral) — pra mostrar todas
+      // as opções lado a lado quando o usuário clicar no destino, igual o
+      // Tripse faz (Smiles X, LATAM Y, Azul Z...).
+      const cheapestByProgram = new Map<string, (typeof flights)[number]>();
+      for (const f of flights) {
+        const current = cheapestByProgram.get(f.program);
+        if (!current || f.miles < current.miles) cheapestByProgram.set(f.program, f);
+      }
+      const offers = Array.from(cheapestByProgram.values())
+        .sort((a, b) => a.miles - b.miles)
+        .map((f) => ({ program: f.program, miles: f.miles, taxes: f.taxes }));
+      const cheapest = offers[0];
 
       const { error: upsertErr } = await supabaseAdmin.from("explore_results").upsert(
         {
@@ -50,6 +61,7 @@ export async function refreshExploreDestinations() {
           cheapest_miles: cheapest.miles,
           cheapest_taxes: cheapest.taxes,
           cheapest_program: cheapest.program,
+          offers,
           sample_date: date,
           updated_at: new Date().toISOString(),
         },
