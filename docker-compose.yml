@@ -1,20 +1,26 @@
 services:
-  milhas-scraper:
+  tgestmilhas:
     build: .
-    container_name: milhas-scraper
+    container_name: tgestmilhas
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
-      - SCRAPE_TIMEOUT_MS=45000
-      - PLAYWRIGHT_HEADLESS=true
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - CRON_SECRET=${CRON_SECRET}
+      - FREE_GROUP_URL=${FREE_GROUP_URL}
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
+      - EVOLUTION_INSTANCE=${EVOLUTION_INSTANCE}
+      - WHATSAPP_GROUP_JID=${WHATSAPP_GROUP_JID}
     networks:
-      - n8n_network
+      - easypanel-curso
 
 networks:
-  n8n_network:
+  easypanel-curso:
     external: true
-    # Deve ser a mesma rede Docker onde o n8n já está rodando na VPS,
-    # para que o n8n consiga chamar http://milhas-scraper:3000 pelo nome
-    # do serviço. Ajuste o nome conforme `docker network ls` na sua VPS.
+    # Rede Docker (Swarm) do projeto "curso" no Easypanel — mesma onde
+    # rodam curso_evolution-api, curso_n8n e curso_bancodedados.

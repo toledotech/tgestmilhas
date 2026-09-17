@@ -1,0 +1,166 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@source "../node_modules/@toledotech/tgest-ui/dist";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark, .dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+/* ============================================================
+   THEME — ToledoTech Design System v2.0 · Digital Futurista (Dark)
+   Mesmo token set usado no TGestCRM/TGestEvent — mantém o admin
+   visualmente consistente com o resto do ecossistema.
+   ============================================================ */
+:root {
+  color-scheme: dark;
+  --radius: 0.75rem;
+
+  --darkBg: #0f1623;
+  --surface: #1a2540;
+  --hairline: #263350;
+
+  --textPrimary: #cbd5e1;
+  --textMuted: #64748b;
+
+  --neonGreen: #34d399;
+  --glow-green: 0 0 15px rgba(52, 211, 153, 0.12);
+
+  --selectBlue: #1e2e48;
+  --selectBlueBorder: #2e4570;
+  --selectBlueText: #7eb3f5;
+
+  --errorRed: #f87171;
+  --errorBg: rgba(248, 113, 113, 0.08);
+  --errorBorder: rgba(248, 113, 113, 0.25);
+  --warnAmber: #fbbf24;
+  --warnBg: rgba(251, 191, 36, 0.08);
+  --warnBorder: rgba(251, 191, 36, 0.25);
+  --infoBlue: #60a5fa;
+  --infoBg: rgba(96, 165, 250, 0.08);
+  --infoBorder: rgba(96, 165, 250, 0.25);
+
+  --background: #0d1117;
+  --foreground: var(--textPrimary);
+  --card: var(--surface);
+  --card-foreground: var(--textPrimary);
+  --popover: var(--surface);
+  --popover-foreground: var(--textPrimary);
+
+  --primary: var(--neonGreen);
+  --primary-foreground: #0a1f14;
+  --secondary: var(--surface);
+  --secondary-foreground: var(--textPrimary);
+  --muted: var(--surface);
+  --muted-foreground: var(--textMuted);
+  --accent: var(--selectBlue);
+  --accent-foreground: var(--selectBlueText);
+  --destructive: var(--errorRed);
+  --destructive-foreground: #ffffff;
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--selectBlueBorder);
+
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--textPrimary);
+  --sidebar-primary: var(--neonGreen);
+  --sidebar-primary-foreground: #0a1f14;
+  --sidebar-accent: var(--selectBlue);
+  --sidebar-accent-foreground: var(--selectBlueText);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--selectBlueBorder);
+}
+
+html,
+body {
+  background: #0d1117;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-size: 26px;
+  font-weight: 800;
+}
+h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+label,
+.label {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+}
+
+.font-mono,
+.mono,
+td.mono,
+[data-mono] {
+  font-family: var(--font-mono);
+}
+
+tr:hover td {
+  background: var(--selectBlue);
+}
+tr .row-actions {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+tr:hover .row-actions {
+  opacity: 1;
+}
+
+.active-blue {
+  background: var(--selectBlue);
+  border-left: 2px solid var(--selectBlueBorder);
+  color: var(--selectBlueText);
+}

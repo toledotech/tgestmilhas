@@ -1,133 +1,97 @@
-# TGestMilhas — Monitor de Passagens com Milhas
+# TGestMilhas — Alerta de Milhas
 
-Serviço de scraping (Playwright) que consulta Smiles, LATAM Pass e TudoAzul
-em busca de passagens com milhas, exposto via HTTP para ser consumido por um
-workflow no n8n (agendamento, filtro de ofertas e alerta via WhatsApp). Inclui
-também uma landing page de captura de leads para o grupo gratuito (Fase 2 da
-estratégia de monetização).
+Landing page de captura de leads + painel admin, na mesma stack dos outros
+produtos ToledoTech: **Vite + TanStack Start (React 19) + TanStack Router/Query
++ Supabase (Auth + Postgres) + Tailwind 4 + `@toledotech/tgest-ui`**.
 
-## Landing page (captura de leads)
-
-`public/index.html` — formulário de email + perfil de viajante, salvo via
-`POST /api/leads` na tabela `leads` do Postgres (`DATABASE_URL`). Ao
-cadastrar, mostra o link do grupo gratuito definido em `FREE_GROUP_URL`
-(`.env`) — troque pelo link real assim que o grupo (WhatsApp ou Telegram)
-existir.
+## Rodando localmente
 
 ```bash
+npm install
+cp .env.example .env   # preencha as chaves do Supabase e da Evolution API
 npm run dev
 # abra http://localhost:3000
 ```
 
-## Painel admin (`/admin`)
+## Landing page (captura de leads)
 
-Painel protegido por login (múltiplos usuários) para:
-- ver a lista de leads capturados
-- escrever e disparar uma mensagem (texto + imagem opcional) direto pro
-  grupo do WhatsApp, via Evolution API
+`public/landing.html` — mantida como HTML estático (não foi reescrita em
+React de propósito, pra não arriscar a UI de captura já validada em
+produção). Servida pela rota `/` ([src/routes/index.tsx](src/routes/index.tsx)),
+que só lê o arquivo do disco. O formulário chama `POST /api/leads`
+([src/routes/api/leads.ts](src/routes/api/leads.ts)), que grava na tabela
+`leads` do Supabase e responde com o link do grupo (`FREE_GROUP_URL`).
 
-### Setup
+## Painel admin (`/app`)
 
-1. **Banco**: `DATABASE_URL` já configurada (mesma do `/api/leads`) — as
-   tabelas `admin_users` e `admin_sessions` são criadas automaticamente.
-2. **Primeiro admin**: defina `ADMIN_BOOTSTRAP_USER` e
-   `ADMIN_BOOTSTRAP_PASSWORD` no `.env` antes do primeiro deploy — se a
-   tabela `admin_users` estiver vazia, esse usuário é criado no startup.
-   Depois disso, use o próprio painel (seção "Adicionar administrador") pra
-   cadastrar outros — essas duas variáveis não têm mais efeito depois que o
-   primeiro usuário existe.
-3. **Sessão**: defina `SESSION_SECRET` com uma string aleatória longa.
-4. **Evolution API — instância dedicada**: **não reaproveite** uma instância
-   de WhatsApp que já seja usada para atendimento do negócio. Crie uma nova
-   instância só para o grupo do Alerta de Milhas:
-   ```bash
-   curl -X POST http://<evolution-api>/instance/create \
-     -H "Content-Type: application/json" -H "apikey: <API_KEY>" \
-     -d '{"instanceName": "alertademilhas", "qrcode": true}'
-   ```
-   Escaneie o QR code retornado com o número dedicado. Adicione esse número
-   como participante do grupo gratuito, depois busque o JID do grupo:
-   ```bash
-   curl -H "apikey: <API_KEY>" \
-     http://<evolution-api>/group/fetchAllGroups/alertademilhas?getParticipants=false
-   ```
-   Preencha `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE` e
-   `WHATSAPP_GROUP_JID` no `.env` com os valores encontrados.
+- **Login** (`/entrar`) via Supabase Auth — e-mail + senha.
+- **Mensagens** (`/app`) — criar/editar/excluir rascunhos e agendamentos,
+  enviar na hora pro grupo do WhatsApp via Evolution API.
+- **Leads** (`/app/leads`) — lista os leads capturados na landing.
+- **Usuários** (`/app/usuarios`) — adicionar/remover administradores
+  (cria usuário no Supabase Auth).
 
-Login em `/admin/login`; sem sessão válida, `/admin` e `/api/admin/*`
-redirecionam/retornam 401.
+Toda rota sob `/app` é protegida por um guard em
+[src/routes/app.tsx](src/routes/app.tsx) que redireciona pra `/entrar` se
+não houver sessão Supabase válida.
 
-## Rodando localmente (scraper)
+### Setup do Supabase
 
-```bash
-npm install       # instala deps e baixa o Chromium do Playwright
-cp .env.example .env
-npm run dev
-```
+1. Crie (ou reutilize) um projeto Supabase — pegue `Project URL`,
+   `anon key` e `service_role key` em **Project Settings → API**.
+2. As tabelas `leads`, `messages` e `admin_users` já existem (foram criadas
+   quando o projeto ainda usava Postgres cru) — só ajuste `admin_users`
+   pra remover a coluna de senha (autenticação agora é via Supabase Auth,
+   não mais bcrypt local).
+3. Crie o primeiro administrador em **Authentication → Users → Add user**
+   (ou pela própria tela `/app/usuarios` depois de ter pelo menos um admin
+   criado manualmente uma vez) e insira a linha correspondente em
+   `admin_users` (`id` = UUID do usuário criado, `email`, `name`).
 
-```bash
-curl "http://localhost:3000/search?origin=GRU&destination=MIA&date=2026-12-15&program=smiles"
-```
+### Envio agendado de mensagens
 
-`program` é opcional e aceita uma lista separada por vírgula
-(`smiles,latampass,tudoazul`); se omitido, busca em todos.
+Não tem mais `setInterval` rodando dentro do processo — o disparo das
+mensagens agendadas vencidas é a rota
+[src/routes/api/cron/send-scheduled-messages.ts](src/routes/api/cron/send-scheduled-messages.ts),
+protegida pelo header `x-cron-secret` (comparado a `CRON_SECRET`). Configure
+um workflow no n8n (que já roda na mesma VPS) com:
 
-Resposta:
+- **Schedule Trigger** — a cada 1 minuto
+- **HTTP Request** — `GET https://seu-dominio/api/cron/send-scheduled-messages`
+  com o header `x-cron-secret: <CRON_SECRET>`
 
-```json
-{
-  "flights": [
-    { "program": "smiles", "origin": "GRU", "destination": "MIA", "date": "2026-12-15", "miles": 12000, "taxes": 89, "flightNumber": "G3 1234", "link": "https://..." }
-  ],
-  "errors": [
-    { "program": "latampass", "message": "timeout após 45000ms" }
-  ]
-}
-```
+### Evolution API — instância dedicada
 
-## Deploy na VPS (junto com o n8n)
-
-Ver [docs/n8n-setup.md](docs/n8n-setup.md) — cobre subir o container, a
-Evolution API e importar o workflow pronto em `n8n/workflow.json`.
-
-## Status da busca (Smiles / LATAM Pass / TudoAzul) — PAUSADO
-
-**seats.aero recusou acesso à API por restrição regional dura**: "our API
-... is not available for use in Brazil ... This is a hard regional
-availability limitation rather than something we can adjust via a custom
-contract, written approval, or one-off exception." Não é questão de preço
-ou negociação — está fechado até (e se) eles mudarem essa política pro
-Brasil. Pedido original em
-[docs/seats-aero-email-draft.md](docs/seats-aero-email-draft.md).
-
-Por decisão do usuário, a busca automatizada está **pausada** por enquanto
-(não é prioridade no momento — retomar quando fizer sentido). Estado atual
-do código, pra quem for continuar depois:
-
-- **`src/seatsAero.js`** + **`src/scrapers/seatsAeroScraper.js`**: cliente
-  pronto pra Cached Search API (Smiles + TudoAzul), mas **nunca testado
-  contra a API real** (nunca tivemos uma chave que funcionasse) e agora sem
-  perspectiva de uso a menos que a seats.aero mude a política regional.
-  `/search?program=smiles` e `program=tudoazul` seguem no ar, mas retornam
-  erro controlado (`SEATS_AERO_API_KEY não configurada`) — não quebra nada,
-  só não busca.
-- **LATAM Pass**: nunca migrou pra seats.aero (não é um source suportado
-  por lá de qualquer forma). Segue no scraper Playwright em
-  `src/scrapers/latampass.js`, que preenche origem/destino/data mas trava
-  no clique do botão de submit final — não revalidado com o stealth plugin.
-- Opções não exploradas ainda, se/quando isso for retomado: contato
-  comercial com a **Moblix** (brasileira, então sem essa restrição
-  regional, mas nunca conseguimos preço público) ou investir mais pesado em
-  scraping (proxy residencial, browser undetectable) contra o
-  bot-detection identificado na Smiles/TudoAzul.
-
-Os scrapers antigos de Smiles/TudoAzul via Playwright (`src/scrapers/
-smiles.js`, `src/scrapers/tudoazul.js`) foram mantidos no repositório como
-referência da investigação de bot-detection, mas não são usados em
-produção (`server.js` não os importa mais).
-
-Para depurar o scraper da LATAM Pass, rode com o navegador visível:
+**Não reaproveite** uma instância de WhatsApp já usada pra atendimento do
+negócio. Crie uma instância só pro grupo do Alerta de Milhas:
 
 ```bash
-PLAYWRIGHT_HEADLESS=false npm run dev
+curl -X POST http://<evolution-api>/instance/create \
+  -H "Content-Type: application/json" -H "apikey: <API_KEY>" \
+  -d '{"instanceName": "alertademilhas", "qrcode": true}'
 ```
+
+Escaneie o QR code com o número dedicado, adicione esse número no grupo
+gratuito e busque o JID do grupo:
+
+```bash
+curl -H "apikey: <API_KEY>" \
+  http://<evolution-api>/group/fetchAllGroups/alertademilhas?getParticipants=false
+```
+
+Preencha `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE` e
+`WHATSAPP_GROUP_JID` no `.env`.
+
+## Deploy na VPS
+
+Build via Docker (`oven/bun`), publicado no GHCR e deploy via SSH —
+ver `.github/workflows/docker.yml` do TGestCRM como referência de pipeline.
+Localmente:
+
+```bash
+docker compose up -d --build
+docker compose logs -f tgestmilhas
+```
+
+O `docker-compose.yml` já está apontando pra rede `easypanel-curso` (mesma
+onde rodam `curso_evolution-api`, `curso_n8n` e `curso_bancodedados`).
