@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { MessageSquare, Users, UserCog, Search, Compass } from "lucide-react";
+import { MessageSquare, Users, UserCog, Search, Compass, Wallet } from "lucide-react";
 import { brand } from "@/config/brand";
 import { supabase } from "@/integrations/supabase/client";
 import { AppTopbar } from "@/components/ui/app-topbar";
@@ -49,6 +49,14 @@ export function AppShell({ email, children }: { email?: string | null; children:
             >
               <Compass className="size-4" />
               Explorar
+            </Link>
+            <Link
+              to="/app/minhas-milhas"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              activeProps={{ className: "active-blue" }}
+            >
+              <Wallet className="size-4" />
+              Minhas Milhas
             </Link>
             <Link
               to="/app/leads"

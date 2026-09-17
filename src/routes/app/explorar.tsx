@@ -7,39 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { listExploreDestinationsFn } from "@/lib/explore.functions";
 import { PriceCalendarDialog, type PriceCalendarTarget } from "@/components/price-calendar-dialog";
+import { PROGRAM_LABEL, PROGRAM_COLOR, DEFAULT_PROGRAM_COLOR, hexToRgba } from "@/lib/program-colors";
 
 type ExploreOffer = { program: string; miles: number; taxes: number };
 
 export const Route = createFileRoute("/app/explorar")({
   component: ExplorarPage,
 });
-
-const PROGRAM_LABEL: Record<string, string> = {
-  smiles: "Smiles",
-  latampass: "LATAM Pass",
-  tudoazul: "TudoAzul",
-  azulpelomundo: "Azul Pelo Mundo",
-  iberiaplus: "Iberia Plus",
-};
-
-// Cor de marca de cada programa — o chip do mais barato ganha um anel extra
-// em cima da própria cor, em vez de virar teal genérico.
-const PROGRAM_COLOR: Record<string, string> = {
-  smiles: "#f97316",
-  latampass: "#dc2626",
-  tudoazul: "#2563eb",
-  azulpelomundo: "#0891b2",
-  iberiaplus: "#7c3aed",
-};
-const DEFAULT_PROGRAM_COLOR = "#64748b";
-
-function hexToRgba(hex: string, alpha: number) {
-  const n = parseInt(hex.slice(1), 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
 
 const MONTH_LABEL = [
   "Janeiro",
