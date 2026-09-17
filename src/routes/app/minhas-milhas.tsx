@@ -77,7 +77,7 @@ function MinhasMilhasPage() {
       </div>
 
       <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <div className="space-y-1.5">
             <Label htmlFor="milhas">Quantas milhas você tem?</Label>
             <div className="relative">
@@ -120,14 +120,17 @@ function MinhasMilhasPage() {
               <option value="internacional">Só internacional</option>
             </select>
           </div>
-        </div>
-        <div className="mt-4 flex gap-2">
-          <Button onClick={filtrar} disabled={!milhas.trim()}>
-            Filtrar
-          </Button>
-          <Button variant="ghost" onClick={limpar}>
-            Limpar
-          </Button>
+          <div className="space-y-1.5">
+            <Label className="invisible hidden sm:block">Ações</Label>
+            <div className="flex gap-2">
+              <Button onClick={filtrar} disabled={!milhas.trim()} className="flex-1 sm:flex-none">
+                Filtrar
+              </Button>
+              <Button variant="ghost" onClick={limpar} className="flex-1 sm:flex-none">
+                Limpar
+              </Button>
+            </div>
+          </div>
         </div>
       </Card>
 
