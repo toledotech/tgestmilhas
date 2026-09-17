@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { listExploreDestinationsFn } from "@/lib/explore.functions";
+import { PriceCalendarDialog, type PriceCalendarTarget } from "@/components/price-calendar-dialog";
 
 type ExploreOffer = { program: string; miles: number; taxes: number };
 
@@ -61,6 +62,7 @@ function ExplorarPage() {
     queryFn: () => listExploreDestinationsFn(),
   });
 
+  const [calendarTarget, setCalendarTarget] = useState<PriceCalendarTarget | null>(null);
   const [destino, setDestino] = useState("");
   const [programa, setPrograma] = useState("todos");
   const [tipo, setTipo] = useState("todos");
@@ -209,9 +211,19 @@ function ExplorarPage() {
                   {offers.map((offer, i) => {
                     const color = PROGRAM_COLOR[offer.program] ?? DEFAULT_PROGRAM_COLOR;
                     return (
-                      <span
+                      <button
                         key={offer.program}
-                        className="mono inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
+                        type="button"
+                        onClick={() =>
+                          setCalendarTarget({
+                            origin: d.origin,
+                            destination: d.destination,
+                            program: offer.program,
+                            programLabel: PROGRAM_LABEL[offer.program] ?? offer.program,
+                            color,
+                          })
+                        }
+                        className="mono inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-transform hover:scale-105"
                         style={{
                           border: `${i === 0 ? 2 : 1}px solid ${color}`,
                           backgroundColor: hexToRgba(color, i === 0 ? 0.16 : 0.1),
@@ -220,7 +232,7 @@ function ExplorarPage() {
                       >
                         {PROGRAM_LABEL[offer.program] ?? offer.program}
                         <b>{offer.miles.toLocaleString("pt-BR")}</b>
-                      </span>
+                      </button>
                     );
                   })}
                 </div>
@@ -229,6 +241,11 @@ function ExplorarPage() {
           })}
         </div>
       )}
+
+      <PriceCalendarDialog
+        target={calendarTarget}
+        onOpenChange={(open) => !open && setCalendarTarget(null)}
+      />
     </div>
   );
 }

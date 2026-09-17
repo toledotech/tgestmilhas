@@ -28,3 +28,27 @@ export const listProgramsFn = createServerFn({ method: "GET" })
     const { listPrograms } = await import("@/lib/miles-search.server");
     return { programs: listPrograms() };
   });
+
+export const getMonthPricesFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(
+    z.object({
+      origin: z.string().min(3).max(4),
+      destination: z.string().min(3).max(4),
+      program: z.string(),
+      year: z.number(),
+      month: z.number().min(0).max(11),
+    })
+  )
+  .handler(async ({ data }) => {
+    const { getMonthPrices } = await import("@/lib/miles-search.server");
+    return {
+      days: getMonthPrices({
+        origin: data.origin.toUpperCase(),
+        destination: data.destination.toUpperCase(),
+        program: data.program,
+        year: data.year,
+        month: data.month,
+      }),
+    };
+  });

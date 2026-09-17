@@ -125,3 +125,53 @@ export async function searchFlights({
 export function listPrograms() {
   return Object.entries(PROGRAM_LABEL).map(([value, label]) => ({ value, label }));
 }
+
+export type CalendarDay = { day: number; miles: number | null };
+
+/** Hash simples e determinístico — mesmo input sempre gera o mesmo "preço",
+ * pra não ficar mudando a cada re-render/clique. */
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+/**
+ * Calendário de preços de um mês inteiro pra uma rota+programa — simulado,
+ * mesma lógica de `generateMockFlights`. TODO(Busca Milhas): trocar por
+ * consulta real quando tivermos a API; a assinatura não muda.
+ */
+export function getMonthPrices({
+  origin,
+  destination,
+  program,
+  year,
+  month, // 0-11
+}: {
+  origin: string;
+  destination: string;
+  program: string;
+  year: number;
+  month: number;
+}): CalendarDay[] {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days: CalendarDay[] = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const hash = hashString(`${origin}${destination}${program}${dateStr}`);
+    const available = hash % 100 >= 12; // ~88% dos dias com disponibilidade
+    if (!available) {
+      days.push({ day, miles: null });
+      continue;
+    }
+    const base = (origin.charCodeAt(0) + destination.charCodeAt(0) + program.length) % 5;
+    const variation = hash % 7;
+    days.push({ day, miles: 6000 + base * 1500 + variation * 2200 });
+  }
+
+  return days;
+}
