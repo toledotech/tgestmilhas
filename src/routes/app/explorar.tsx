@@ -21,6 +21,25 @@ const PROGRAM_LABEL: Record<string, string> = {
   iberiaplus: "Iberia Plus",
 };
 
+// Cor de marca de cada programa — o chip do mais barato ganha um anel extra
+// em cima da própria cor, em vez de virar teal genérico.
+const PROGRAM_COLOR: Record<string, string> = {
+  smiles: "#f97316",
+  latampass: "#dc2626",
+  tudoazul: "#2563eb",
+  azulpelomundo: "#0891b2",
+  iberiaplus: "#7c3aed",
+};
+const DEFAULT_PROGRAM_COLOR = "#64748b";
+
+function hexToRgba(hex: string, alpha: number) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255;
+  const g = (n >> 8) & 255;
+  const b = n & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 const MONTH_LABEL = [
   "Janeiro",
   "Fevereiro",
@@ -187,19 +206,26 @@ function ExplorarPage() {
                 </p>
 
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {offers.map((offer, i) => (
-                    <span
-                      key={offer.program}
-                      className={`mono inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ${
-                        i === 0
-                          ? "border-primary bg-primary/10 font-semibold text-primary"
-                          : "border-border text-foreground"
-                      }`}
-                    >
-                      {PROGRAM_LABEL[offer.program] ?? offer.program}
-                      <b>{offer.miles.toLocaleString("pt-BR")}</b>
-                    </span>
-                  ))}
+                  {offers.map((offer, i) => {
+                    const color = PROGRAM_COLOR[offer.program] ?? DEFAULT_PROGRAM_COLOR;
+                    return (
+                      <span
+                        key={offer.program}
+                        className={`mono inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                          i === 0 ? "ring-1 ring-offset-1 ring-offset-card" : ""
+                        }`}
+                        style={{
+                          borderColor: color,
+                          backgroundColor: hexToRgba(color, 0.1),
+                          color,
+                          ...(i === 0 ? ({ "--tw-ring-color": color } as React.CSSProperties) : {}),
+                        }}
+                      >
+                        {PROGRAM_LABEL[offer.program] ?? offer.program}
+                        <b>{offer.miles.toLocaleString("pt-BR")}</b>
+                      </span>
+                    );
+                  })}
                 </div>
               </Card>
             );
